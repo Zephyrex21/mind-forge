@@ -13,8 +13,22 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- Middleware ---
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin(origin, callback) {
+    // Allow requests with no origin (Postman, curl, health checks)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 }));
 
@@ -48,7 +62,7 @@ async function start() {
   try {
     await connectDb();
     app.listen(PORT, () => {
-      console.log(`MindForge API running on http://localhost:${PORT}`);
+      console.log(`Mind Forge API is running on port ${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);
