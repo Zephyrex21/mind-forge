@@ -11,10 +11,14 @@ import { containsCrisisLanguage, CRISIS_RESOURCES } from '../services/safety/key
 
 const router = Router();
 
-// Rate limit: 10/min for free & guest users, 60/min for premium
+// Rate limit: 10/min for free & guest users, 60/min for premium.
+// Keyed by authenticated user ID when available (falls back to IP for
+// fully anonymous requests) so people behind a shared IP — office wifi,
+// campus network, mobile carrier NAT — don't end up sharing one bucket.
 const generateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: (req) => req.user?.plan === 'premium' ? 60 : 10,
+  keyGenerator: (req) => getClientId(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Generation rate limit reached. Please wait a moment.' },

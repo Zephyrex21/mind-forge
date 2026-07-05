@@ -12,6 +12,14 @@ import { errorHandler } from './middleware/errorHandler.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Render (and most PaaS hosts) sit behind a reverse proxy that adds an
+// X-Forwarded-For header. Without this, Express's req.ip resolves to the
+// proxy's internal IP for every request — meaning every user on the app
+// shares one rate-limit bucket instead of getting their own, and
+// express-rate-limit will flag the X-Forwarded-For/trust-proxy mismatch.
+// "1" trusts exactly one hop, matching Render's single reverse proxy.
+app.set('trust proxy', 1);
+
 // --- Middleware ---
 const allowedOrigins = [
   "http://localhost:5173",

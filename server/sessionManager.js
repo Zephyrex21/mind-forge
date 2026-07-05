@@ -20,10 +20,34 @@ function parseCookies(cookieHeader) {
   return list;
 }
 
+function isProdEnv() {
+  return process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Cookie attributes differ by deployment shape:
+ *  - Same-site local dev (localhost frontend + localhost backend): SameSite=Lax
+ *    works fine and doesn't require HTTPS.
+ *  - Cross-site production (e.g. Vercel frontend + Render backend, different
+ *    registrable domains): browsers will silently DROP a SameSite=Lax cookie
+ *    on programmatic fetch() calls — it's only sent on top-level navigations.
+ *    This must be SameSite=None, which in turn requires Secure (HTTPS).
+ * Getting this wrong doesn't error anywhere — it just makes every
+ * authenticated request after login look like the user was logged out.
+ */
 function cookieString(value, maxAgeSec) {
-  const isProduction = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
-  let str = `${AUTH_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}`;
-  if (isProduction) str += '; Secure';
+  const prod = isProdEnv();
+  const sameSite = prod ? 'None' : 'Lax';
+  let str = `${AUTH_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAgeSec}`;
+  if (prod) str += '; Secure';
+  return str;
+}
+
+function clearCookieString() {
+  const prod = isProdEnv();
+  const sameSite = prod ? 'None' : 'Lax';
+  let str = `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=${sameSite}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0`;
+  if (prod) str += '; Secure';
   return str;
 }
 
@@ -59,6 +83,7 @@ export const sessionManager = {
     return {
       token,
       userId: payload.sub,
+      issuedAt: payload.iat,
       user: {
         id: payload.sub,
         email: payload.email,
@@ -71,9 +96,16 @@ export const sessionManager = {
 
   /**
    * Re-issue the cookie with a fresh expiry to keep active users signed in.
+   * Throttled to once per day (rather than every request) — re-signing a JWT
+   * and writing a Set-Cookie header on literally every API call is wasted
+   * work when the existing token is nowhere near expiry.
    */
   refreshSession(session, res) {
     if (!session) return;
+
+    const ageSec = session.issuedAt ? Math.floor(Date.now() / 1000) - session.issuedAt : Infinity;
+    if (ageSec < 60 * 60 * 24) return; // token is less than a day old, nothing to do
+
     const token = signToken({
       sub: session.user.id,
       email: session.user.email,
@@ -89,7 +121,7 @@ export const sessionManager = {
    * this is sufficient for the app's threat model (no sensitive financial data).
    */
   destroySession(req, res) {
-    res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0`);
+    res.setHeader('Set-Cookie', clearCookieString());
   },
 };
 
