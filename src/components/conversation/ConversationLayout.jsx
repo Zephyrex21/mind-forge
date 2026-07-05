@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 import { useToast } from '../../app/providers/ToastProvider';
 import { useConversationStore } from './conversationStore';
@@ -19,7 +19,6 @@ import { CHECKIN_QUESTIONS } from './questionRegistry';
 export default function ConversationLayout() {
   const { vc, isDark } = useTheme();
   const { showToast } = useToast();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const store = useConversationStore();
   const {
@@ -34,6 +33,7 @@ export default function ConversationLayout() {
     handleCommand,
     progress,
     formData,
+    setSettingsOpen,
   } = store;
 
   const handleInputSubmit = (text) => {
@@ -92,7 +92,7 @@ export default function ConversationLayout() {
           )}
 
           {currentQuestionId !== 'review' && (
-            <div className={`p-4 border-t ${isDark ? 'border-gray-800 bg-gray-905/70' : 'border-gray-200 bg-white/70'} backdrop-blur-md sticky bottom-0 z-20`}>
+            <div className={`p-4 border-t ${isDark ? 'border-gray-800 bg-gray-900/70' : 'border-gray-200 bg-white/70'} backdrop-blur-md sticky bottom-0 z-20`}>
               <div className="max-w-2xl mx-auto w-full">
                 <ConversationInput
                   onSubmit={handleInputSubmit}
@@ -105,13 +105,7 @@ export default function ConversationLayout() {
         </main>
       </div>
 
-      {settingsOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={() => setSettingsOpen(false)}>
-          <div className="absolute right-0 top-0 bottom-0 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-            <SettingsDrawer onClose={() => setSettingsOpen(false)} />
-          </div>
-        </div>
-      )}
+      <SettingsDrawer />
     </div>
   );
 }

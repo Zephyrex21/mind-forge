@@ -118,10 +118,25 @@ function sanitizeBody(body = {}) {
   } = body;
 
   return {
-    title, currentFocus, intention, mood, energy, sleepHours, sleepQuality,
+    title, currentFocus, intention,
+    // Number fields: an empty string (what the frontend sends for a
+    // never-filled-in numeric input) must become `undefined`, not be
+    // passed straight through — Mongoose throws a CastError trying to
+    // coerce '' to a Number, which was silently breaking saves whenever
+    // sleep hours was left blank.
+    mood: toNumberOrUndefined(mood),
+    energy: toNumberOrUndefined(energy),
+    sleepHours: toNumberOrUndefined(sleepHours),
+    sleepQuality: toNumberOrUndefined(sleepQuality),
     copingTools, copingNotes, goals, milestones, gratitude, supportContacts,
     customNotes, aiReflection, aiModel, flaggedForSafety,
   };
+}
+
+function toNumberOrUndefined(value) {
+  if (value === '' || value === null || value === undefined) return undefined;
+  const num = Number(value);
+  return Number.isNaN(num) ? undefined : num;
 }
 
 export default router;

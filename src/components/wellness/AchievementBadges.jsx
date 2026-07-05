@@ -30,7 +30,7 @@ export default function AchievementBadges({ stats }) {
             className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
               unlocked
                 ? isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50 border-indigo-200'
-                : isDark ? 'bg-gray-900/30 border-gray-800 opacity-40' : 'bg-gray-50 border-gray-150 opacity-50'
+                : isDark ? 'bg-gray-900/30 border-gray-800 opacity-40' : 'bg-gray-50 border-gray-200 opacity-50'
             }`}
           >
             <Icon className={`w-5 h-5 ${unlocked ? 'text-indigo-500' : vc.textSec}`} />

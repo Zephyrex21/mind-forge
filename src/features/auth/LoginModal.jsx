@@ -51,13 +51,13 @@ export default function LoginModal({ onClose, onLogin, onRegister, onGuest }) {
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4.5 right-4.5 p-1.5 rounded-lg text-gray-400 hover:text-gray-650 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+          className="absolute top-5 right-5 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white mb-4 shadow-md select-none">
-          <svg className="w-6.5 h-6.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-4.418 0-8-3.582-8-8 0-3.5 2.5-6 5-8.5.5 1.5 1 2.5 2 3.5 1-2 1-4 1-4s4 2.5 4 7c0 1-.5 2-1 2.5 1.5-.5 2.5-1.5 3-3 1 1.5 2 3.5 2 5.5 0 4.418-3.582 8-8 8z" />
           </svg>
         </div>
@@ -89,7 +89,7 @@ export default function LoginModal({ onClose, onLogin, onRegister, onGuest }) {
           <button
             onClick={onClose}
             className={`w-full py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-              isDark ? 'border-gray-850 hover:bg-gray-800 text-gray-300' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600 shadow-sm'
+              isDark ? 'border-gray-900 hover:bg-gray-800 text-gray-300' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600 shadow-sm'
             }`}
           >
             Cancel

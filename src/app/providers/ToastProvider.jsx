@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useRef, useContext } from 'react';
+import React, { createContext, useState, useCallback, useRef, useContext, useMemo } from 'react';
 
 const ToastContext = createContext(null);
 
@@ -19,8 +19,10 @@ export function ToastProvider({ children }) {
     setToast({ message: '', visible: false });
   }, []);
 
+  const value = useMemo(() => ({ toast, showToast, hideToast }), [toast, showToast, hideToast]);
+
   return (
-    <ToastContext.Provider value={{ toast, showToast, hideToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       {/* Toast is self-rendering within the provider */}
       {toast.visible && (

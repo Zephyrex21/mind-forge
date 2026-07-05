@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import MarkdownRenderer from '../common/MarkdownRenderer';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../app/providers/ToastProvider';
 import { checkinsApi } from '../../services/checkinsApi';
 
 export default function ReviewScreen({ generator, onJumpToQuestion }) {
   const { vc, isDark } = useTheme();
   const { executeWithAuth } = useAuth();
+  const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [checkinId, setCheckinId] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -25,6 +27,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
     setEditMarkdown,
     safetyFlagged,
     crisisResources,
+    hasGeneratedOnce,
   } = generator;
 
   const handleSave = () => {
@@ -34,12 +37,14 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
         const payload = { ...formData, aiReflection: editMarkdown || generatedMarkdown, flaggedForSafety: safetyFlagged };
         if (checkinId) {
           await checkinsApi.update(checkinId, payload);
+          showToast('Check-in updated!');
         } else {
           const saved = await checkinsApi.create(payload);
           setCheckinId(saved._id);
+          showToast('Check-in saved!');
         }
       } catch (err) {
-        alert('Failed to save check-in');
+        showToast(err.message || 'Failed to save check-in');
       } finally {
         setIsSaving(false);
       }
@@ -75,12 +80,13 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
         </div>
       )}
 
-      {generatedMarkdown ? (
-        <div className={`p-6 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-150 shadow-md'} space-y-5`}>
+      {hasGeneratedOnce ? (
+        <div className={`p-6 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-md'} space-y-5`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
             <div>
               <h3 className="text-base font-bold flex items-center gap-2">
-                <Check className="w-5 h-5 text-emerald-500" /> Your Reflection is Ready
+                {isGenerating ? <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" /> : <Check className="w-5 h-5 text-emerald-500" />}
+                {isGenerating ? 'Regenerating your reflection...' : 'Your Reflection is Ready'}
               </h3>
               <p className={`text-xs ${vc.textSec}`}>Review, copy, or save your reflection.</p>
             </div>
@@ -93,20 +99,26 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
                   Raw
                 </button>
               </div>
-              <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+              <button onClick={handleCopy} disabled={isGenerating || !generatedMarkdown} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
               </button>
-              <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 transition-colors border border-gray-200 dark:border-gray-800">
+              <button onClick={handleSave} disabled={isSaving || isGenerating || !generatedMarkdown} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors border border-gray-200 dark:border-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
                 <Save className="w-3.5 h-3.5 text-indigo-500" /> {isSaving ? 'Saving...' : checkinId ? 'Updated' : 'Save'}
               </button>
-              <button onClick={handleDownload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">
+              <button onClick={handleDownload} disabled={isGenerating || !generatedMarkdown} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Download className="w-3.5 h-3.5" /> Download
               </button>
             </div>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-4 max-h-[500px] overflow-y-auto">
-            {activeTab === 'preview' ? (
+            {isGenerating && !editMarkdown ? (
+              <div className="space-y-3 py-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-3 rounded-full shimmer-bg" style={{ width: `${55 + Math.random() * 40}%` }} />
+                ))}
+              </div>
+            ) : activeTab === 'preview' ? (
               <MarkdownRenderer content={editMarkdown} />
             ) : (
               <textarea
@@ -121,7 +133,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-150'} space-y-3 relative group`}>
+        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} space-y-3 relative group`}>
           <button onClick={() => onJumpToQuestion('currentFocus')} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
@@ -132,11 +144,11 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
           </div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-150'} space-y-3 relative group`}>
+        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} space-y-3 relative group`}>
           <button onClick={() => onJumpToQuestion('mood')} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
-          <h4 className="text-xs font-bold text-gray-550 flex items-center gap-1.5"><Smile className="w-4 h-4 text-emerald-500" /> Mood & Energy</h4>
+          <h4 className="text-xs font-bold text-gray-600 flex items-center gap-1.5"><Smile className="w-4 h-4 text-emerald-500" /> Mood & Energy</h4>
           <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
             <div><span className="text-gray-400">Mood:</span> {formData.mood}/5</div>
             <div><span className="text-gray-400">Energy:</span> {formData.energy}/5</div>
@@ -144,15 +156,15 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
           </div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-150'} space-y-3 relative group`}>
+        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} space-y-3 relative group`}>
           <button onClick={() => onJumpToQuestion('copingTools')} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
-          <h4 className="text-xs font-bold text-gray-550 flex items-center gap-1.5"><HeartHandshake className="w-4 h-4 text-purple-500" /> Coping Tools</h4>
+          <h4 className="text-xs font-bold text-gray-600 flex items-center gap-1.5"><HeartHandshake className="w-4 h-4 text-purple-500" /> Coping Tools</h4>
           <div className="flex flex-wrap gap-1">
             {(formData.copingTools || []).length > 0 ? (
               formData.copingTools.map(t => (
-                <span key={t} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isDark ? 'bg-gray-800 text-gray-350' : 'bg-gray-100 text-gray-650'}`}>{t}</span>
+                <span key={t} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-700'}`}>{t}</span>
               ))
             ) : (
               <span className="text-xs text-gray-400">None selected</span>
@@ -160,11 +172,11 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
           </div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-150'} space-y-3 relative group`}>
+        <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} space-y-3 relative group`}>
           <button onClick={() => onJumpToQuestion('goals')} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
-          <h4 className="text-xs font-bold text-gray-550 flex items-center gap-1.5"><Target className="w-4 h-4 text-amber-500" /> Goals & Gratitude</h4>
+          <h4 className="text-xs font-bold text-gray-600 flex items-center gap-1.5"><Target className="w-4 h-4 text-amber-500" /> Goals & Gratitude</h4>
           <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300">
             <div className="truncate"><span className="text-gray-400">Goals:</span> {formData.goals || 'Not provided'}</div>
             <div className="truncate"><span className="text-gray-400">Gratitude:</span> {formData.gratitude || 'Not provided'}</div>
@@ -172,14 +184,14 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
         </div>
       </div>
 
-      {!generatedMarkdown ? (
+      {!hasGeneratedOnce ? (
         <div className="flex justify-center pt-4">
           <button
             onClick={() => executeWithAuth(generateReflection, 'reflection generation')}
             disabled={isGenerating}
             className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all duration-150 active:scale-[0.98] shadow-lg shadow-indigo-500/15 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {isGenerating ? (<><Loader2 className="w-4.5 h-4.5 animate-spin" /> Reflecting...</>) : (<><Check className="w-4.5 h-4.5" /> Generate Reflection</>)}
+            {isGenerating ? (<><Loader2 className="w-5 h-5 animate-spin" /> Reflecting...</>) : (<><Check className="w-5 h-5" /> Generate Reflection</>)}
           </button>
         </div>
       ) : null}

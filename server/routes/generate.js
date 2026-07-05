@@ -36,7 +36,10 @@ router.post('/', optionalAuth, generateLimiter, async (req, res, next) => {
   const clientId = getClientId(req);
 
   try {
-    const checkin = req.body || {};
+    // forceRefresh is sent by the frontend on explicit "Regenerate" clicks —
+    // the whole point of regenerating is wanting a fresh take, so that
+    // action must never be silently served a cached response.
+    const { forceRefresh, ...checkin } = req.body || {};
 
     // --- Validate: at least one meaningful field must be present ---
     const hasContent = ['currentFocus', 'intention', 'copingNotes', 'goals', 'milestones', 'gratitude', 'customNotes']
@@ -50,7 +53,7 @@ router.post('/', optionalAuth, generateLimiter, async (req, res, next) => {
 
     // --- Safety screen (never blocks generation, only flags it) ---
     const safetyFlagged = containsCrisisLanguage(
-      checkin.copingNotes, checkin.goals, checkin.milestones,
+      checkin.currentFocus, checkin.copingNotes, checkin.goals, checkin.milestones,
       checkin.gratitude, checkin.customNotes, checkin.intention
     );
 
@@ -60,9 +63,14 @@ router.post('/', optionalAuth, generateLimiter, async (req, res, next) => {
     }
 
     try {
-      // --- Cache check (flagged entries always regenerate fresh) ---
-      const cacheHash = hashKey(checkin, [safetyFlagged ? 'flagged' : 'ok']);
-      const cachedMarkdown = !safetyFlagged ? getCached(cacheHash) : null;
+      // --- Cache check ---
+      // Scoped to clientId (user ID, or IP as a fallback for anonymous
+      // requests) — a cache key that ignores who's asking means two
+      // different people who happen to leave similar default/empty fields
+      // get served each other's saved reflection. Flagged entries and
+      // explicit regenerate requests always skip the cache.
+      const cacheHash = hashKey(checkin, [safetyFlagged ? 'flagged' : 'ok', clientId]);
+      const cachedMarkdown = (!safetyFlagged && !forceRefresh) ? getCached(cacheHash) : null;
       if (cachedMarkdown) {
         return res.json({
           markdown: cachedMarkdown,

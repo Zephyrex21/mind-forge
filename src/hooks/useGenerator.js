@@ -45,6 +45,12 @@ export function useGeneratorState(showToast) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [safetyFlagged, setSafetyFlagged] = useState(false);
   const [crisisResources, setCrisisResources] = useState(null);
+  // Tracks whether at least one reflection has been generated this session,
+  // independent of what's currently in generatedMarkdown (which gets
+  // cleared at the start of each regenerate) — keeps the Regenerate/Copy/
+  // Save button row from flickering back to the first-time "Generate"
+  // button while a regeneration is in flight.
+  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
 
   // Preview state
   const [previewTab, setPreviewTab] = useState('preview');
@@ -99,18 +105,30 @@ export function useGeneratorState(showToast) {
   const generateReflection = useCallback(async () => {
     if (isGenerating) return; // Prevent double-clicks
 
+    // Regenerating means the user wants a fresh take — never silently reuse
+    // a cached response just because the inputs happen to match.
+    const isRegenerate = Boolean(generatedMarkdown) || hasGeneratedOnce;
+    const previousMarkdown = generatedMarkdown;
+
     setIsGenerating(true);
     setSafetyFlagged(false);
     setCrisisResources(null);
+    // Clear the old result up front so it's unambiguous a new generation is
+    // running — leaving stale content on screen during/after a failed
+    // regeneration is exactly what made past failures look like "nothing
+    // changed no matter what I typed."
+    setGeneratedMarkdown('');
+    setEditMarkdown('');
 
     try {
-      const data = await generateApi.generateReflection(formData);
+      const data = await generateApi.generateReflection(formData, { forceRefresh: isRegenerate });
       const text = data.markdown || '';
 
       setGeneratedMarkdown(text);
       setEditMarkdown(text);
       setSafetyFlagged(!!data.safetyFlagged);
       setCrisisResources(data.crisisResources || null);
+      setHasGeneratedOnce(true);
 
       if (data.safetyFlagged) {
         showToast('We noticed some heavy language in your entry — resources are shown below.');
@@ -120,19 +138,28 @@ export function useGeneratorState(showToast) {
         showToast('Reflection generated.');
       }
     } catch (err) {
+      // Restore whatever was there before rather than leaving the pane
+      // empty — a failed regenerate shouldn't cost the user their last
+      // successful reflection.
+      if (previousMarkdown) {
+        setGeneratedMarkdown(previousMarkdown);
+        setEditMarkdown(previousMarkdown);
+      }
+
       if (err.status === 409) {
         showToast('A generation is already in progress. Please wait.');
-      } else if (err.status === 429) {
-        showToast('AI is busy. Please wait a moment and try again.');
-      } else if (err.status === 400) {
-        showToast(err.message);
+      } else if (err.status === 429 || err.status === 400) {
+        // Show the server's actual message — it already distinguishes "you're
+        // sending requests too fast" from "Gemini itself is busy," which a
+        // generic message would otherwise hide.
+        showToast(err.message || 'Please wait a moment and try again.');
       } else {
         showToast(err.message || 'Cannot reach server. Is the backend running?');
       }
     } finally {
       setIsGenerating(false);
     }
-  }, [isGenerating, formData, showToast]);
+  }, [isGenerating, generatedMarkdown, hasGeneratedOnce, formData, showToast]);
 
   // --- Reset ---
 
@@ -143,6 +170,7 @@ export function useGeneratorState(showToast) {
     setEditMarkdown('');
     setSafetyFlagged(false);
     setCrisisResources(null);
+    setHasGeneratedOnce(false);
     setConfirmReset(false);
     showToast('Check-in reset');
   }, [showToast]);
@@ -170,6 +198,7 @@ export function useGeneratorState(showToast) {
     generateReflection,
     safetyFlagged,
     crisisResources,
+    hasGeneratedOnce,
 
     // Preview
     previewTab,

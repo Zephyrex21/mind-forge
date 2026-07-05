@@ -6,7 +6,7 @@ import { checkinsApi } from '../../../services/checkinsApi';
 import {
   Flame, BookOpen, Moon, Smile, ChevronRight,
   Plus, Copy, ExternalLink, Settings, LayoutDashboard,
-  RefreshCw, NotebookPen,
+  RefreshCw, NotebookPen, Menu, X, LogOut,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MoodTrendChart from '../../../components/wellness/MoodTrendChart';
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentCheckins, setRecentCheckins] = useState([]);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -69,9 +70,9 @@ export default function Dashboard() {
 
       {/* SIDEBAR */}
       <aside className={`w-64 border-r shrink-0 hidden md:flex flex-col h-screen ${
-        isDark ? 'border-gray-800 bg-gray-905' : 'border-gray-200 bg-gray-50/50'
+        isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-gray-50/50'
       }`}>
-        <div className="p-6 flex items-center gap-2.5 border-b border-gray-250 dark:border-gray-800">
+        <div className="p-6 flex items-center gap-2.5 border-b border-gray-300 dark:border-gray-800">
           <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold select-none">M</div>
           <span className="font-bold text-sm">MindForge</span>
         </div>
@@ -101,7 +102,7 @@ export default function Dashboard() {
           </button>
         </nav>
 
-        <div className="p-4 border-t border-gray-250 dark:border-gray-800 space-y-3">
+        <div className="p-4 border-t border-gray-300 dark:border-gray-800 space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shadow-sm">
               {(user.displayName || 'G')[0].toUpperCase()}
@@ -125,9 +126,18 @@ export default function Dashboard() {
         <header className={`border-b shrink-0 px-6 py-4 flex items-center justify-between sticky top-0 z-35 ${
           isDark ? 'border-gray-800 bg-gray-950/80' : 'border-gray-200 bg-white/80'
         } backdrop-blur-md`}>
-          <div className="text-left">
-            <h1 className="text-base font-bold">Your Wellness Dashboard</h1>
-            <p className="text-[10px] text-gray-500">Track your mood, streak, and saved check-ins</p>
+          <div className="text-left flex items-center gap-3">
+            <button
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+              className={`md:hidden p-1.5 rounded-lg border ${isDark ? 'border-gray-800 text-gray-400' : 'border-gray-200 text-gray-500'}`}
+            >
+              {mobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+            <div>
+              <h1 className="text-base font-bold">Your Wellness Dashboard</h1>
+              <p className="text-[10px] text-gray-500">Track your mood, streak, and saved check-ins</p>
+            </div>
           </div>
           <button
             onClick={() => navigate('/')}
@@ -139,10 +149,24 @@ export default function Dashboard() {
           </button>
         </header>
 
+        {mobileNavOpen && (
+          <div className={`md:hidden border-b px-4 py-3 space-y-1 ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
+            <button onClick={() => { setMobileNavOpen(false); navigate('/my-checkins'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <NotebookPen className="w-4 h-4" /> My Check-ins
+            </button>
+            <button onClick={() => { setMobileNavOpen(false); navigate('/settings'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <Settings className="w-4 h-4" /> Settings
+            </button>
+            <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-500/5">
+              <LogOut className="w-4 h-4" /> Log Out
+            </button>
+          </div>
+        )}
+
         <div className="max-w-5xl w-full mx-auto px-6 py-8 space-y-6">
           {/* Welcome Banner */}
           <div className={`p-6 rounded-2xl border flex flex-col sm:flex-row items-center gap-5 justify-between ${
-            isDark ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-gray-150 shadow-sm'
+            isDark ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-gray-200 shadow-sm'
           }`}>
             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
               <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xl border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -163,28 +187,28 @@ export default function Dashboard() {
 
           {/* Stat cards */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className={`p-4 rounded-2xl border flex flex-col items-center justify-center ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-150'}`}>
+            <div className={`p-4 rounded-2xl border flex flex-col items-center justify-center ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
               <CheckinStreakRing streak={stats?.currentStreak || 0} size={90} />
             </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-150'}`}>
+            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Total Check-ins</div>
               <div className="text-2xl font-black font-mono">{stats?.totalCheckins || 0}</div>
-              <div className="text-[9px] text-gray-550">Every entry counts</div>
+              <div className="text-[9px] text-gray-600">Every entry counts</div>
             </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-150'}`}>
+            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><Smile className="w-3.5 h-3.5" /> Avg Mood (30d)</div>
               <div className="text-2xl font-black font-mono">{stats?.avgMood ?? '—'}</div>
-              <div className="text-[9px] text-gray-550">Scale of 1-5</div>
+              <div className="text-[9px] text-gray-600">Scale of 1-5</div>
             </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-150'}`}>
+            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><Moon className="w-3.5 h-3.5" /> Avg Sleep (30d)</div>
               <div className="text-2xl font-black font-mono">{stats?.avgSleepHours ?? '—'}{stats?.avgSleepHours ? 'h' : ''}</div>
-              <div className="text-[9px] text-gray-550">Hours per night</div>
+              <div className="text-[9px] text-gray-600">Hours per night</div>
             </div>
           </div>
 
           {/* Mood trend chart */}
-          <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-150'}`}>
+          <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4">Mood & Energy Trend</h3>
             <MoodTrendChart trend={stats?.trend || []} />
           </div>
@@ -214,7 +238,7 @@ export default function Dashboard() {
                 <div
                   key={c._id}
                   className={`p-5 rounded-2xl border flex flex-col justify-between h-[150px] hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-200 ${
-                    isDark ? 'bg-gray-900/40 border-gray-800 hover:bg-gray-900 hover:border-gray-700' : 'bg-white border-gray-150 hover:shadow-md'
+                    isDark ? 'bg-gray-900/40 border-gray-800 hover:bg-gray-900 hover:border-gray-700' : 'bg-white border-gray-200 hover:shadow-md'
                   }`}
                 >
                   <div>
@@ -232,6 +256,7 @@ export default function Dashboard() {
                       onClick={() => handleDelete(c._id)}
                       className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-500"
                       title="Delete"
+                      aria-label="Delete check-in"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
@@ -239,7 +264,7 @@ export default function Dashboard() {
                 </div>
               ))}
               {recentCheckins.length === 0 && (
-                <div className={`col-span-full py-12 rounded-2xl border border-dashed border-gray-250 dark:border-gray-800 text-center text-xs ${vc.textSec}`}>
+                <div className={`col-span-full py-12 rounded-2xl border border-dashed border-gray-300 dark:border-gray-800 text-center text-xs ${vc.textSec}`}>
                   No check-ins yet. Start your first one above!
                 </div>
               )}

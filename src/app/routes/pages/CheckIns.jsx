@@ -94,7 +94,7 @@ export default function CheckIns() {
           </button>
           <div>
             <h1 className="text-sm font-bold flex items-center gap-2">
-              <NotebookPen className="w-4.5 h-4.5 text-indigo-500" /> My Check-ins
+              <NotebookPen className="w-5 h-5 text-indigo-500" /> My Check-ins
             </h1>
             <p className="text-[10px] text-gray-500">Every saved wellness reflection, in one place</p>
           </div>
@@ -111,7 +111,7 @@ export default function CheckIns() {
       <div className="flex-1 max-w-5xl w-full mx-auto px-6 py-8 space-y-6">
 
         <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row gap-4 items-center justify-between ${
-          isDark ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-gray-150 shadow-sm'
+          isDark ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-gray-200 shadow-sm'
         }`}>
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -136,7 +136,7 @@ export default function CheckIns() {
               <Star className={`w-3.5 h-3.5 ${onlyFavorites ? 'fill-amber-500' : ''}`} /> Favorites Only
             </button>
 
-            <div className="flex rounded-lg border border-gray-250 dark:border-gray-800 p-0.5 bg-gray-50 dark:bg-gray-950">
+            <div className="flex rounded-lg border border-gray-300 dark:border-gray-800 p-0.5 bg-gray-50 dark:bg-gray-950">
               <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-indigo-500 text-white' : 'text-gray-500'}`}>
                 <Grid className="w-3.5 h-3.5" />
               </button>
@@ -152,7 +152,7 @@ export default function CheckIns() {
             <div
               key={c._id}
               className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                isDark ? 'bg-gray-900/40 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-150 hover:shadow-md'
+                isDark ? 'bg-gray-900/40 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:shadow-md'
               }`}
             >
               <div className="p-5">
@@ -174,14 +174,14 @@ export default function CheckIns() {
                     {expanded === c._id ? 'Hide Reflection' : 'View Reflection'}
                     {expanded === c._id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
-                  <button onClick={() => handleDelete(c._id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-500" title="Delete">
+                  <button onClick={() => handleDelete(c._id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-500" title="Delete" aria-label="Delete check-in">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               {expanded === c._id && (
-                <div className={`px-5 pb-5 border-t animate-fade-in ${isDark ? 'border-gray-800' : 'border-gray-150'}`}>
+                <div className={`px-5 pb-5 border-t animate-fade-in ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                   <div className="pt-4 text-sm github-markdown-body">
                     {c.aiReflection ? (
                       <MarkdownRenderer content={c.aiReflection} />
@@ -194,7 +194,7 @@ export default function CheckIns() {
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className={`col-span-full py-16 rounded-2xl border border-dashed border-gray-250 dark:border-gray-800 text-center text-xs ${vc.textSec}`}>
+            <div className={`col-span-full py-16 rounded-2xl border border-dashed border-gray-300 dark:border-gray-800 text-center text-xs ${vc.textSec}`}>
               No matching check-ins found.
             </div>
           )}

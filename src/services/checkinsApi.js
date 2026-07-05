@@ -21,9 +21,12 @@ export const usageApi = {
 /**
  * Wellness reflection generation — matches server/routes/generate.js.
  * Returns { markdown, usage, cached, safetyFlagged, crisisResources? }.
+ * Pass { forceRefresh: true } on explicit regenerate clicks so the server
+ * skips its cache and always makes a fresh Gemini call.
  */
 export const generateApi = {
-  generateReflection: (checkin) => api.post('/api/generate', checkin),
+  generateReflection: (checkin, options = {}) =>
+    api.post('/api/generate', { ...checkin, forceRefresh: !!options.forceRefresh }),
 };
 
 export default checkinsApi;

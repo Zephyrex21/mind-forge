@@ -23,7 +23,7 @@ export default function CrisisResourcesStep() {
 
       <div className="space-y-2.5">
         {CRISIS_RESOURCES.map((r) => (
-          <div key={r.name} className={`flex items-center gap-3 p-4 rounded-xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-gray-50 border-gray-150'}`}>
+          <div key={r.name} className={`flex items-center gap-3 p-4 rounded-xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
               <Phone className="w-4 h-4 text-rose-500" />
             </div>

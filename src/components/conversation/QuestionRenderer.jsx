@@ -20,10 +20,10 @@ export default function QuestionRenderer({ question, generator, onSubmit }) {
             <button
               key={value}
               onClick={() => onSubmit(value, label)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 hover:scale-102 active:scale-95 ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 hover:scale-105 active:scale-95 ${
                 isDark
                   ? 'bg-gray-900 border-gray-800 text-gray-300 hover:text-white hover:border-gray-700'
-                  : 'bg-white border-gray-200 text-gray-750 hover:bg-gray-50'
+                  : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
               }`}
             >
               {label}
@@ -40,14 +40,14 @@ export default function QuestionRenderer({ question, generator, onSubmit }) {
       <div className="flex gap-3 mt-2 animate-fade-in">
         <button
           onClick={() => onSubmit(true, 'Yes')}
-          className="px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-500 hover:bg-indigo-650 text-white transition-colors"
+          className="px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-500 hover:bg-indigo-700 text-white transition-colors"
         >
           Yes
         </button>
         <button
           onClick={() => onSubmit(false, 'No')}
           className={`px-6 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
-            isDark ? 'border-gray-800 bg-gray-900 hover:bg-gray-850 text-gray-300' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+            isDark ? 'border-gray-800 bg-gray-900 hover:bg-gray-900 text-gray-300' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
           }`}
         >
           No
@@ -70,8 +70,8 @@ export default function QuestionRenderer({ question, generator, onSubmit }) {
     };
 
     return (
-      <div className={`mt-3 p-5 rounded-2xl border ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50/50 border-gray-150'} animate-fade-in`}>
-        <h3 className="text-xs font-bold text-gray-550 flex items-center gap-1.5 mb-3">
+      <div className={`mt-3 p-5 rounded-2xl border ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50/50 border-gray-200'} animate-fade-in`}>
+        <h3 className="text-xs font-bold text-gray-600 flex items-center gap-1.5 mb-3">
           <HeartHandshake className="w-4 h-4 text-indigo-400" /> {question.label}
         </h3>
         <div className="flex flex-wrap gap-2">

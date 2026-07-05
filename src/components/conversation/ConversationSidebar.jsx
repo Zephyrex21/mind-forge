@@ -21,10 +21,10 @@ export default function ConversationSidebar({ progress, currentSection, onJumpTo
 
   return (
     <aside className={`w-64 border-r shrink-0 hidden md:flex flex-col h-full transition-colors duration-300 ${
-      isDark ? 'border-gray-800 bg-gray-905' : 'border-gray-200 bg-gray-50/50'
+      isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-gray-50/50'
     }`}>
       {/* 1. Progress Overview */}
-      <div className="p-5 border-b border-gray-250 dark:border-gray-800 space-y-4 text-left">
+      <div className="p-5 border-b border-gray-300 dark:border-gray-800 space-y-4 text-left">
         <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Progress Overview</h3>
         
         <div className="space-y-3">
@@ -45,15 +45,15 @@ export default function ConversationSidebar({ progress, currentSection, onJumpTo
         </div>
 
         <div className="grid grid-cols-2 gap-2.5 pt-2">
-          <div className="p-2.5 rounded-xl bg-gray-150/40 dark:bg-gray-900 border border-gray-200/20 dark:border-white/5 space-y-1">
+          <div className="p-2.5 rounded-xl bg-gray-200/40 dark:bg-gray-900 border border-gray-200/20 dark:border-white/5 space-y-1">
             <Clock className="w-3.5 h-3.5 text-indigo-500" />
             <div className="text-[9px] font-bold text-gray-500">EST. TIME</div>
-            <div className="text-xs font-bold text-gray-800 dark:text-gray-250">{progress.estimatedTimeStr || '3 mins'}</div>
+            <div className="text-xs font-bold text-gray-800 dark:text-gray-300">{progress.estimatedTimeStr || '3 mins'}</div>
           </div>
-          <div className="p-2.5 rounded-xl bg-gray-150/40 dark:bg-gray-900 border border-gray-200/20 dark:border-white/5 space-y-1">
+          <div className="p-2.5 rounded-xl bg-gray-200/40 dark:bg-gray-900 border border-gray-200/20 dark:border-white/5 space-y-1">
             <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
             <div className="text-[9px] font-bold text-gray-500">REMAINING</div>
-            <div className="text-xs font-bold text-gray-800 dark:text-gray-250">{progress.remaining} steps</div>
+            <div className="text-xs font-bold text-gray-800 dark:text-gray-300">{progress.remaining} steps</div>
           </div>
         </div>
       </div>
@@ -75,7 +75,7 @@ export default function ConversationSidebar({ progress, currentSection, onJumpTo
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold select-none border transition-all duration-200 ${
                   isActive
                     ? 'bg-indigo-500/10 border-indigo-500/25 text-indigo-500'
-                    : 'bg-transparent border-transparent text-gray-650 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    : 'bg-transparent border-transparent text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
                 <Icon className={`w-4 h-4 shrink-0 ${

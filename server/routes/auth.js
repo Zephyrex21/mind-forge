@@ -18,6 +18,17 @@ const authLimiter = rateLimit({
 });
 
 /**
+ * True for a MongoDB duplicate-key error (code 11000) on the email field.
+ * The emailExists() pre-check has a race window — two registrations for the
+ * same email arriving at nearly the same moment can both pass the check —
+ * so the unique-index violation is still the real backstop and needs its
+ * own clean error instead of falling through as a raw 500.
+ */
+function isDuplicateEmailError(err) {
+  return err?.code === 11000 && Object.keys(err?.keyPattern || {}).includes('email');
+}
+
+/**
  * POST /api/auth/register
  * body: { email, password, displayName? }
  */
@@ -36,7 +47,15 @@ router.post('/register', authLimiter, async (req, res, next) => {
       return res.status(409).json({ error: 'An account with that email already exists.' });
     }
 
-    const user = await UserModel.createUser({ email, password, displayName });
+    let user;
+    try {
+      user = await UserModel.createUser({ email, password, displayName });
+    } catch (err) {
+      if (isDuplicateEmailError(err)) {
+        return res.status(409).json({ error: 'An account with that email already exists.' });
+      }
+      throw err;
+    }
     sessionManager.createSession(user, res);
 
     res.status(201).json({ user: user.toSafeJSON() });
@@ -144,17 +163,25 @@ router.post('/upgrade-guest', requireAuth, async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const { User } = await import('../models/User.js');
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      {
-        email: email.toLowerCase().trim(),
-        passwordHash,
-        displayName: displayName?.trim() || req.user.displayName,
-        isGuest: false,
-        plan: 'free',
-      },
-      { new: true }
-    );
+    let user;
+    try {
+      user = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          displayName: displayName?.trim() || req.user.displayName,
+          isGuest: false,
+          plan: 'free',
+        },
+        { new: true, runValidators: true }
+      );
+    } catch (err) {
+      if (isDuplicateEmailError(err)) {
+        return res.status(409).json({ error: 'An account with that email already exists.' });
+      }
+      throw err;
+    }
 
     sessionManager.createSession(user, res);
     res.json({ user: user.toSafeJSON() });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles, Loader2, RefreshCw, Copy, ArrowLeft,
   Save, LifeBuoy, Phone,
@@ -35,13 +35,11 @@ export default function GeneratePreview() {
     previewTab,
     setPreviewTab,
     goBack,
+    hasGeneratedOnce,
   } = useGenerator();
 
-  useEffect(() => {
-    const handleResume = () => generateReflection();
-    window.addEventListener('mindforge_resume_generation', handleResume);
-    return () => window.removeEventListener('mindforge_resume_generation', handleResume);
-  }, [generateReflection]);
+  // Note: regeneration is triggered explicitly via the button below, not
+  // automatically — see handleSave/generateReflection.
 
   const handleSave = () => {
     executeWithAuth(async () => {
@@ -135,7 +133,7 @@ export default function GeneratePreview() {
         )}
 
         <div className="space-y-3 mb-6">
-          {!generatedMarkdown ? (
+          {!hasGeneratedOnce ? (
             <button
               onClick={() => executeWithAuth(generateReflection, 'reflection generation')}
               disabled={isGenerating}
@@ -153,11 +151,12 @@ export default function GeneratePreview() {
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btnSec} ${isGenerating ? 'opacity-70 cursor-wait' : ''}`}
                 >
                   {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Regenerate
+                  {isGenerating ? 'Regenerating...' : 'Regenerate'}
                 </button>
                 <button
                   onClick={copyMarkdown}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btn}`}
+                  disabled={isGenerating || !generatedMarkdown}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btn} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Copy className="w-4 h-4" /> Copy
                 </button>
@@ -166,9 +165,9 @@ export default function GeneratePreview() {
               <div className="flex gap-3">
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 border ${
-                    isDark ? 'border-gray-800 bg-gray-900 text-gray-300' : 'border-gray-250 bg-white text-gray-700'
+                  disabled={isSaving || isGenerating || !generatedMarkdown}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 border disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark ? 'border-gray-800 bg-gray-900 text-gray-300' : 'border-gray-300 bg-white text-gray-700'
                   }`}
                 >
                   <Save className="w-4 h-4 text-indigo-500" />
@@ -176,7 +175,8 @@ export default function GeneratePreview() {
                 </button>
                 <button
                   onClick={handleDownload}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btnSec}`}
+                  disabled={isGenerating || !generatedMarkdown}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btnSec} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   Download .md
                 </button>
@@ -185,13 +185,14 @@ export default function GeneratePreview() {
           )}
         </div>
 
-        {generatedMarkdown && (
+        {hasGeneratedOnce && (
           <div>
             <label className={`block text-sm font-medium mb-2 ${vc.text}`}>Quick Edit</label>
             <textarea
               value={editMarkdown}
               onChange={e => setEditMarkdown(e.target.value)}
               rows={16}
+              placeholder={isGenerating ? 'Regenerating...' : ''}
               className={`w-full px-4 py-3 rounded-xl font-mono text-xs transition-all outline-none resize-none ${vc.input}`}
             />
           </div>

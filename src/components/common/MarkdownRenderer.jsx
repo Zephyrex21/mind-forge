@@ -140,17 +140,23 @@ export default function MarkdownRenderer({ content }) {
   const parseInline = (text) => {
     if (!text) return '';
 
-    // Sanitization: Escape base tags
+    // Sanitization: escape base tags AND quote characters. Quotes matter
+    // here specifically because $2 captures below get inserted directly into
+    // href="$2" / src="$2" attributes — without escaping them, a URL/alt
+    // text containing a literal `"` could break out of the attribute and
+    // inject arbitrary HTML (e.g. `onerror=...`).
     let html = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     // Markdown Image Badges: ![alt](url)
     html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto inline-block my-1 align-middle" />');
 
     // Hyperlinks: [text](url)
-    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-indigo-650 dark:text-indigo-400 font-semibold hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-indigo-700 dark:text-indigo-400 font-semibold hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
 
     // Bold text
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -161,7 +167,7 @@ export default function MarkdownRenderer({ content }) {
     html = html.replace(/_(.*?)_/g, '<em>$1</em>');
 
     // Inline Code snippets
-    html = html.replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-rose-500 font-mono text-[11px] border border-gray-250 dark:border-gray-700">$1</code>');
+    html = html.replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-rose-500 font-mono text-[11px] border border-gray-300 dark:border-gray-700">$1</code>');
 
     return <span dangerouslySetInnerHTML={{ __html: html }} />;
   };
@@ -181,7 +187,7 @@ export default function MarkdownRenderer({ content }) {
               6: 'text-xs font-semibold mb-1 mt-2 text-gray-500 dark:text-gray-400'
             };
             return (
-              <Tag key={index} className={`${headerSizes[block.depth]} text-gray-900 dark:text-white border-gray-250 dark:border-gray-800`}>
+              <Tag key={index} className={`${headerSizes[block.depth]} text-gray-900 dark:text-white border-gray-300 dark:border-gray-800`}>
                 {parseInline(block.text)}
               </Tag>
             );
@@ -200,7 +206,7 @@ export default function MarkdownRenderer({ content }) {
             );
           case 'code':
             return (
-              <pre key={index} className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 p-4 rounded-xl font-mono text-[11px] overflow-auto text-left text-gray-750 dark:text-gray-300 my-4 shadow-inner">
+              <pre key={index} className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 p-4 rounded-xl font-mono text-[11px] overflow-auto text-left text-gray-800 dark:text-gray-300 my-4 shadow-inner">
                 {block.lang && (
                   <div className="text-[10px] text-gray-400 dark:text-gray-500 select-none pb-2 font-sans border-b border-gray-200 dark:border-gray-900 mb-2 uppercase font-bold tracking-wider">
                     {block.lang}

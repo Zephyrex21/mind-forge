@@ -41,6 +41,7 @@ export default function TopBar() {
       <div className="flex items-center gap-2">
         <button
           onClick={toggleTheme}
+          aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
           className={`p-2 rounded-lg transition-all hover:opacity-70 ${vc.text}`}
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

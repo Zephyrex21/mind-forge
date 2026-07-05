@@ -35,6 +35,7 @@ export default function SettingsDrawer() {
             <h2 className={`text-lg font-bold ${vc.text}`}>Settings</h2>
             <button
               onClick={() => { setSettingsOpen(false); setConfirmReset(false); }}
+              aria-label="Close settings"
               className={`p-1 rounded-lg hover:opacity-70 ${vc.text}`}
             >
               <X className="w-5 h-5" />

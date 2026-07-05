@@ -16,7 +16,7 @@ const CRISIS_PATTERNS = [
   /\bno reason to live\b/i,
   /\bself[\s-]?harm\b/i,
   /\bhurt(ing)? myself\b/i,
-  /\bcan'?t go on\b/i,
+  /\bcan'?t go on (anymore|any more|like this)\b/i,
   /\bbetter off (dead|without me)\b/i,
 ];
 

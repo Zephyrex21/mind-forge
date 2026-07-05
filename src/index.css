@@ -58,6 +58,31 @@ body {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/*
+ * Robust gradient-text utility.
+ * Tailwind's `bg-clip-text text-transparent` alone is NOT reliable across
+ * browsers — without `-webkit-text-fill-color: transparent`, some engines
+ * (older Chrome/Edge, some WebKit builds) ignore the clip and just render
+ * `color: transparent`, making the text invisible instead of gradient-filled.
+ * This class adds the missing fallback and a solid-color fallback for
+ * engines that don't support background-clip: text at all.
+ */
+.gradient-text {
+  color: #4f46e5; /* solid fallback if background-clip: text isn't supported */
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dark .gradient-text {
+  color: #a5b4fc;
+}
+@supports not (background-clip: text) {
+  .gradient-text {
+    -webkit-text-fill-color: unset;
+    background: none;
+  }
+}
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
