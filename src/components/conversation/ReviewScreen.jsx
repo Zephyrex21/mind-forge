@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 import {
   User, Smile, HeartHandshake, Target, Edit2,
-  Check, Loader2, Copy, Download, Save, LayoutDashboard,
+  Check, Loader2, Copy, Download, Save,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import MarkdownRenderer from '../common/MarkdownRenderer';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../app/providers/ToastProvider';
@@ -14,10 +13,8 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
   const { vc, isDark } = useTheme();
   const { executeWithAuth } = useAuth();
   const { showToast } = useToast();
-  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [checkinId, setCheckinId] = useState(null);
-  const [justSaved, setJustSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('preview');
 
@@ -47,7 +44,6 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
           setCheckinId(saved._id);
           showToast('Check-in saved!');
         }
-        setJustSaved(true);
       } catch (err) {
         showToast(err.message || 'Failed to save check-in');
       } finally {
@@ -128,23 +124,12 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
             ) : (
               <textarea
                 value={editMarkdown}
-                onChange={(e) => { setEditMarkdown(e.target.value); setJustSaved(false); }}
+                onChange={(e) => setEditMarkdown(e.target.value)}
                 rows={16}
                 className="w-full font-mono text-xs leading-relaxed bg-transparent border-0 outline-none resize-none text-gray-800 dark:text-gray-200 focus:ring-0"
               />
             )}
           </div>
-
-          {justSaved && checkinId && (
-            <button
-              onClick={() => navigate('/dashboard')}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
-                isDark ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300' : 'border-indigo-200 bg-indigo-50 text-indigo-700'
-              }`}
-            >
-              <Check className="w-4 h-4" /> Saved! <LayoutDashboard className="w-4 h-4 ml-1" /> View Dashboard
-            </button>
-          )}
         </div>
       ) : null}
 

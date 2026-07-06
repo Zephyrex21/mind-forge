@@ -74,6 +74,8 @@ export default function HomePortal() {
 
   const triggerMockupDemo = () => setMockupStep(0);
 
+  const startCheckin = () => navigate('/check-in');
+
   return (
     <motion.div
       variants={pageVariants}
@@ -170,7 +172,7 @@ export default function HomePortal() {
             ) : (
               <>
                 <button
-                  onClick={() => openLoginModal(() => navigate('/dashboard'))}
+                  onClick={() => openLoginModal(startCheckin)}
                   className={`px-4 py-2 text-xs font-semibold rounded-xl border flex items-center gap-1.5 transition-all duration-200 ${
                     isDark
                       ? 'border-gray-800 bg-gray-900 hover:bg-gray-900 hover:text-white text-gray-300 shadow-md'
