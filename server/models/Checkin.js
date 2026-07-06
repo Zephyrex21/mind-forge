@@ -132,11 +132,42 @@ export const CheckinModel = {
     return docs.reverse();
   },
 
+  /**
+   * Frequency-ranked coping tools across the user's check-ins — powers the
+   * "what helps you most" dashboard section.
+   */
+  async getTopCopingTools(userId, { limit = 6 } = {}) {
+    const docs = await Checkin.find({ userId }).select('copingTools').lean();
+    const counts = new Map();
+    for (const doc of docs) {
+      for (const tool of doc.copingTools || []) {
+        counts.set(tool, (counts.get(tool) || 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([tool, count]) => ({ tool, count }));
+  },
+
+  /**
+   * Most recent check-in that actually has a generated reflection — used
+   * for a "Latest Reflection" preview card on the dashboard.
+   */
+  async getLatestReflection(userId) {
+    return Checkin.findOne({ userId, aiReflection: { $exists: true, $ne: null } })
+      .sort({ createdAt: -1 })
+      .select('createdAt aiReflection mood energy')
+      .lean();
+  },
+
   async getStats(userId, tzOffsetMinutes = 0) {
-    const [total, streak, trend] = await Promise.all([
+    const [total, streak, trend, topCopingTools, latestReflection] = await Promise.all([
       Checkin.countDocuments({ userId }),
       CheckinModel.getStreak(userId, tzOffsetMinutes),
       CheckinModel.getTrend(userId, { limit: 30 }),
+      CheckinModel.getTopCopingTools(userId),
+      CheckinModel.getLatestReflection(userId),
     ]);
 
     const avg = (key) => {
@@ -151,6 +182,9 @@ export const CheckinModel = {
       avgMood: avg('mood'),
       avgEnergy: avg('energy'),
       avgSleepHours: avg('sleepHours'),
+      avgSleepQuality: avg('sleepQuality'),
+      topCopingTools,
+      latestReflection,
       trend,
     };
   },
