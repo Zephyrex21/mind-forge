@@ -23,7 +23,12 @@ export default function MoodEnergyStep() {
           type="number"
           min="0" max="24" step="0.5"
           value={formData.sleepHours}
-          onChange={v => updateForm('sleepHours', v === '' ? '' : Number(v))}
+          onChange={v => {
+            if (v === '') return updateForm('sleepHours', '');
+            const num = Number(v);
+            if (Number.isNaN(num)) return;
+            updateForm('sleepHours', Math.min(Math.max(num, 0), 24));
+          }}
           placeholder="7.5"
         />
         <div />

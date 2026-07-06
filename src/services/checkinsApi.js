@@ -7,7 +7,11 @@ import { api } from './api';
 export const checkinsApi = {
   list: () => api.get('/api/checkins'),
   get: (id) => api.get(`/api/checkins/${id}`),
-  stats: () => api.get('/api/checkins/stats'),
+  // tzOffset (Date.getTimezoneOffset()) lets the server bucket the streak
+  // by the user's local calendar day rather than the server's (UTC on
+  // most hosts) — without it, a late-evening check-in can appear to break
+  // an otherwise-unbroken streak.
+  stats: () => api.get(`/api/checkins/stats?tzOffset=${new Date().getTimezoneOffset()}`),
   create: (data) => api.post('/api/checkins', data),
   update: (id, data) => api.put(`/api/checkins/${id}`, data),
   toggleFavorite: (id) => api.post(`/api/checkins/${id}/favorite`),
@@ -15,7 +19,7 @@ export const checkinsApi = {
 };
 
 export const usageApi = {
-  get: () => api.get('/api/user/usage'),
+  get: () => api.get(`/api/user/usage?tzOffset=${new Date().getTimezoneOffset()}`),
 };
 
 /**

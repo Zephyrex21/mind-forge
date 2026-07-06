@@ -28,6 +28,23 @@ export function AuthProvider({ children }) {
     refreshUser();
   }, [refreshUser]);
 
+  // If the client's local "logged in" state goes stale — cookie cleared,
+  // or (rarely) the token actually expires mid-session — any authenticated
+  // request will 401. Without this, the user is stuck clicking a button
+  // that keeps failing the same way with just a generic error toast.
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser((current) => {
+        if (current === null) return current; // already handled/logged out
+        showToast('Your session expired — please sign in again.');
+        setIsLoginModalOpen(true);
+        return null;
+      });
+    };
+    window.addEventListener('mindforge:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('mindforge:unauthorized', handleUnauthorized);
+  }, [showToast]);
+
   const runPendingAction = useCallback(() => {
     setIsLoginModalOpen(false);
     if (pendingAction) {

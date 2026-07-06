@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { optionalAuth } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import { callGemini, GeminiRateLimitError, GeminiAuthError } from '../services/ai/geminiProvider.js';
 import { withRetry } from '../services/ai/retryHandler.js';
 import { hashKey, getCached, setCache, getCacheStats } from '../services/ai/cache.js';
@@ -32,14 +32,28 @@ const generateLimiter = rateLimit({
  * Request body: a check-in object (see models/Checkin.js for fields)
  * Response: { markdown, usage, cached, safetyFlagged, crisisResources? }
  */
-router.post('/', optionalAuth, generateLimiter, async (req, res, next) => {
+router.post('/', requireAuth, generateLimiter, async (req, res, next) => {
   const clientId = getClientId(req);
 
   try {
     // forceRefresh is sent by the frontend on explicit "Regenerate" clicks —
     // the whole point of regenerating is wanting a fresh take, so that
     // action must never be silently served a cached response.
-    const { forceRefresh, ...checkin } = req.body || {};
+    const { forceRefresh, ...rawCheckin } = req.body || {};
+
+    // Clamp numeric fields to sane ranges before they ever reach the prompt.
+    // Unlike saving a check-in (which goes through Mongoose's min/max
+    // validators), this route talks to Gemini directly — an out-of-range
+    // value like "99 hours of sleep" typed past the input's soft HTML
+    // min/max hint would otherwise sail straight into the prompt and
+    // produce a confused-looking reflection.
+    const checkin = {
+      ...rawCheckin,
+      mood: clamp(rawCheckin.mood, 1, 5),
+      energy: clamp(rawCheckin.energy, 1, 5),
+      sleepQuality: clamp(rawCheckin.sleepQuality, 1, 5),
+      sleepHours: clamp(rawCheckin.sleepHours, 0, 24),
+    };
 
     // --- Validate: at least one meaningful field must be present ---
     const hasContent = ['currentFocus', 'intention', 'copingNotes', 'goals', 'milestones', 'gratitude', 'customNotes']
@@ -146,6 +160,7 @@ router.post('/', optionalAuth, generateLimiter, async (req, res, next) => {
 
       return res.json({
         markdown: result.text,
+        model: usedModel,
         usage: { ...result.usage, cached: false },
         cached: false,
         safetyFlagged,
@@ -170,5 +185,15 @@ router.get('/health', (req, res) => {
   }
   res.json({ cache: getCacheStats(), models: getModelHealth() });
 });
+
+/**
+ * Clamps a numeric field into [min, max]. Non-numeric/empty values pass
+ * through untouched — validation elsewhere already treats those as
+ * "not answered," this only guards against genuinely out-of-range numbers.
+ */
+function clamp(value, min, max) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return value;
+  return Math.min(Math.max(value, min), max);
+}
 
 export default router;

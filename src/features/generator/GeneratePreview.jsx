@@ -32,6 +32,7 @@ export default function GeneratePreview() {
     generateReflection,
     safetyFlagged,
     crisisResources,
+    aiModel,
     previewTab,
     setPreviewTab,
     goBack,
@@ -45,7 +46,7 @@ export default function GeneratePreview() {
     executeWithAuth(async () => {
       setIsSaving(true);
       try {
-        const payload = { ...formData, aiReflection: editMarkdown || generatedMarkdown, flaggedForSafety: safetyFlagged };
+        const payload = { ...formData, aiReflection: editMarkdown || generatedMarkdown, flaggedForSafety: safetyFlagged, aiModel };
         if (checkinId) {
           await checkinsApi.update(checkinId, payload);
           showToast('Check-in updated!');

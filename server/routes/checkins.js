@@ -21,13 +21,17 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
- * GET /api/checkins/stats
+ * GET /api/checkins/stats?tzOffset=<minutes>
  * Aggregate data for the custom Mood/Streak/Achievements components:
  * current streak, totals, mood/energy/sleep trend over the last 30 entries.
+ * tzOffset should be the browser's `Date.getTimezoneOffset()` value, so the
+ * streak's day-boundaries line up with the user's local midnight instead of
+ * the server's (UTC on most hosts).
  */
 router.get('/stats', async (req, res, next) => {
   try {
-    const stats = await CheckinModel.getStats(req.user.id);
+    const tzOffsetMinutes = Number(req.query.tzOffset);
+    const stats = await CheckinModel.getStats(req.user.id, Number.isFinite(tzOffsetMinutes) ? tzOffsetMinutes : 0);
     res.json(stats);
   } catch (err) {
     next(err);

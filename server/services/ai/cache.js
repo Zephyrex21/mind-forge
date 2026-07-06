@@ -105,7 +105,10 @@ function stripEmpty(obj) {
     }
     return Object.keys(result).length > 0 ? result : undefined;
   }
-  // Primitives: skip empty strings, false, 0, null, undefined
+  // Primitives: skip empty strings, false, null, and undefined. Deliberately
+  // NOT stripping 0 — a real "slept 0 hours" answer is meaningfully
+  // different from "field left blank" and should produce a different
+  // cache key, not collapse into the same one.
   if (obj === '' || obj === null || obj === undefined || obj === false) {
     return undefined;
   }

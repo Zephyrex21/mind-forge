@@ -17,8 +17,10 @@ export function requireAuth(req, res, next) {
 
 /**
  * Optional auth — never rejects, just attaches req.user if a valid
- * session exists. Used on endpoints that behave differently for signed-in
- * vs anonymous users (e.g. /api/generate).
+ * session exists. Not currently used by any route (every endpoint that
+ * touches user data or the AI gateway requires auth), kept as a utility
+ * for any future endpoint that should behave differently for signed-in
+ * vs. anonymous users without blocking anonymous requests outright.
  */
 export function optionalAuth(req, res, next) {
   const session = sessionManager.getSession(req);

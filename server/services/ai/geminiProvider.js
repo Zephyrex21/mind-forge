@@ -5,7 +5,7 @@
 
 const GEMINI_API_KEY = () => process.env.GEMINI_API_KEY;
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 20_000;
 
 // --- Typed Errors ---
 
@@ -92,10 +92,22 @@ export async function callGemini({ model, prompt, systemPrompt, maxOutputTokens 
     }
 
     const data = await res.json();
-    let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data?.candidates?.[0];
+    let text = candidate?.content?.parts?.[0]?.text || '';
 
     // Strip markdown code fences that Gemini sometimes wraps around output
     text = text.replace(/^```(?:markdown|md)?\n?/i, '').replace(/\n?```\s*$/i, '');
+
+    // Gemini can return HTTP 200 with no usable text at all — blocked by its
+    // own safety filters, hit a recitation check, or some other non-STOP
+    // finish reason. Silently returning that as a "successful" empty
+    // reflection would look exactly like a broken/fake result to the user;
+    // treat it as a failure instead so the model-fallback chain (and the
+    // model above it in generate.js) gets a real chance to recover.
+    if (!text.trim()) {
+      const finishReason = candidate?.finishReason || 'UNKNOWN';
+      throw new GeminiError(`Gemini returned no usable content (finishReason: ${finishReason})`, 502, { finishReason, candidate });
+    }
 
     const usage = data?.usageMetadata || {};
 
@@ -109,7 +121,7 @@ export async function callGemini({ model, prompt, systemPrompt, maxOutputTokens 
     };
   } catch (err) {
     if (err.name === 'AbortError') {
-      throw new GeminiError('Gemini API request timed out after 30s', 408);
+      throw new GeminiError(`Gemini API request timed out after ${TIMEOUT_MS / 1000}s`, 408);
     }
     // Re-throw typed errors
     if (err instanceof GeminiError) throw err;

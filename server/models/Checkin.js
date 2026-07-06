@@ -41,7 +41,13 @@ const checkinSchema = new Schema({
   gratitude: { type: String, trim: true, maxlength: 800 },
 
   // Support Contacts (private, optional)
-  supportContacts: [supportContactSchema],
+  supportContacts: {
+    type: [supportContactSchema],
+    validate: {
+      validator: (arr) => arr.length <= 5,
+      message: 'You can add up to 5 support contacts.',
+    },
+  },
 
   // Custom Notes
   customNotes: { type: String, trim: true, maxlength: 1000 },
@@ -91,19 +97,24 @@ export const CheckinModel = {
 
   /**
    * Consecutive-day check-in streak, counting back from today.
+   * @param {string} userId
+   * @param {number} tzOffsetMinutes - from JS `Date.getTimezoneOffset()`,
+   *   i.e. minutes local time is BEHIND UTC (negative if ahead). Without
+   *   this, "today" is computed in the server's timezone (UTC on most
+   *   hosts), which can silently break a user's streak near midnight in
+   *   their own timezone even though they never actually missed a day.
    */
-  async getStreak(userId) {
+  async getStreak(userId, tzOffsetMinutes = 0) {
     const docs = await Checkin.find({ userId }).sort({ createdAt: -1 }).select('createdAt').lean();
     if (!docs.length) return 0;
 
-    const dayKeys = new Set(docs.map(d => dayKey(d.createdAt)));
+    const dayKeys = new Set(docs.map(d => dayKey(d.createdAt, tzOffsetMinutes)));
     let streak = 0;
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
+    const cursor = new Date(); // real "now" — dayKey() alone handles the offset shift
 
-    while (dayKeys.has(dayKey(cursor))) {
+    while (dayKeys.has(dayKey(cursor, tzOffsetMinutes))) {
       streak++;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setUTCDate(cursor.getUTCDate() - 1); // step back one real day; dayKey reshifts each time
     }
     return streak;
   },
@@ -121,10 +132,10 @@ export const CheckinModel = {
     return docs.reverse();
   },
 
-  async getStats(userId) {
+  async getStats(userId, tzOffsetMinutes = 0) {
     const [total, streak, trend] = await Promise.all([
       Checkin.countDocuments({ userId }),
-      CheckinModel.getStreak(userId),
+      CheckinModel.getStreak(userId, tzOffsetMinutes),
       CheckinModel.getTrend(userId, { limit: 30 }),
     ]);
 
@@ -145,10 +156,15 @@ export const CheckinModel = {
   },
 };
 
-function dayKey(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+/**
+ * Shifts a UTC timestamp into the user's local-time-equivalent instant,
+ * then truncates to that day's midnight — giving a stable key for "this
+ * calendar day in the user's own timezone."
+ */
+function dayKey(date, tzOffsetMinutes = 0) {
+  const shifted = new Date(new Date(date).getTime() - tzOffsetMinutes * 60_000);
+  shifted.setUTCHours(0, 0, 0, 0);
+  return shifted.getTime();
 }
 
 export { Checkin };

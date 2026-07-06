@@ -1,9 +1,16 @@
 /**
  * Exponential backoff retry handler.
  * Retries only on 429 (rate limit) and 5xx (server) errors.
+ *
+ * Kept short on purpose: this app also falls back across multiple models
+ * (see modelRouter.js) as a second layer of resilience. Retrying
+ * aggressively on one model before ever trying the fallback just delays
+ * getting to a model that might already be healthy — with 2 models in the
+ * chain, 3 retries each could mean a user waits over a minute in a
+ * degraded scenario before seeing anything at all.
  */
 
-const DEFAULT_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s
+const DEFAULT_DELAYS = [1500]; // one quick retry, then let modelRouter fall back
 
 /**
  * Wrap an async function with retry logic.

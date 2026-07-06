@@ -27,6 +27,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
     setEditMarkdown,
     safetyFlagged,
     crisisResources,
+    aiModel,
     hasGeneratedOnce,
   } = generator;
 
@@ -34,7 +35,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
     executeWithAuth(async () => {
       setIsSaving(true);
       try {
-        const payload = { ...formData, aiReflection: editMarkdown || generatedMarkdown, flaggedForSafety: safetyFlagged };
+        const payload = { ...formData, aiReflection: editMarkdown || generatedMarkdown, flaggedForSafety: safetyFlagged, aiModel };
         if (checkinId) {
           await checkinsApi.update(checkinId, payload);
           showToast('Check-in updated!');

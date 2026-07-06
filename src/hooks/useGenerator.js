@@ -45,6 +45,7 @@ export function useGeneratorState(showToast) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [safetyFlagged, setSafetyFlagged] = useState(false);
   const [crisisResources, setCrisisResources] = useState(null);
+  const [aiModel, setAiModel] = useState('');
   // Tracks whether at least one reflection has been generated this session,
   // independent of what's currently in generatedMarkdown (which gets
   // cleared at the start of each regenerate) — keeps the Regenerate/Copy/
@@ -128,6 +129,7 @@ export function useGeneratorState(showToast) {
       setEditMarkdown(text);
       setSafetyFlagged(!!data.safetyFlagged);
       setCrisisResources(data.crisisResources || null);
+      setAiModel(data.model || '');
       setHasGeneratedOnce(true);
 
       if (data.safetyFlagged) {
@@ -199,6 +201,7 @@ export function useGeneratorState(showToast) {
     safetyFlagged,
     crisisResources,
     hasGeneratedOnce,
+    aiModel,
 
     // Preview
     previewTab,

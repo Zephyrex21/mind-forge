@@ -13,7 +13,8 @@ router.use(requireAuth);
  */
 router.get('/usage', async (req, res, next) => {
   try {
-    const stats = await CheckinModel.getStats(req.user.id);
+    const tzOffsetMinutes = Number(req.query.tzOffset);
+    const stats = await CheckinModel.getStats(req.user.id, Number.isFinite(tzOffsetMinutes) ? tzOffsetMinutes : 0);
     res.json({
       totalCheckins: stats.totalCheckins,
       currentStreak: stats.currentStreak,
