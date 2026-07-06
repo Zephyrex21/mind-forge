@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../../app/providers/ThemeProvider';
 import { useGenerator } from '../../../hooks/useGenerator';
 import TextareaField from '../../../components/common/TextareaField';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 
 export default function AboutYouStep() {
   const { vc } = useTheme();
@@ -11,6 +12,8 @@ export default function AboutYouStep() {
     <div className="animate-fade-in">
       <h2 className={`text-2xl font-bold mb-1 ${vc.text}`}>About You</h2>
       <p className={`mb-6 ${vc.textSec}`}>A quick word on what's going on for you right now</p>
+
+      <ExampleFillButton stepKey="about-you" />
 
       <TextareaField
         label="What's your current focus in life?"

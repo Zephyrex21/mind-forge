@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../../app/providers/ThemeProvider';
 import { useGenerator } from '../../../hooks/useGenerator';
 import TextareaField from '../../../components/common/TextareaField';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 
 export default function MilestonesStep() {
   const { vc } = useTheme();
@@ -11,6 +12,8 @@ export default function MilestonesStep() {
     <div className="animate-fade-in">
       <h2 className={`text-2xl font-bold mb-1 ${vc.text}`}>Wellness Milestones</h2>
       <p className={`mb-6 ${vc.textSec}`}>Progress worth celebrating — however small</p>
+
+      <ExampleFillButton stepKey="milestones" />
       <TextareaField
         label="What have you accomplished lately?"
         value={formData.milestones}

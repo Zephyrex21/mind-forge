@@ -78,15 +78,43 @@ export function useGeneratorState(showToast) {
 
   // --- Navigation ---
 
-  // A daily check-in should have minimal friction — mood/energy/sleep quality
-  // always have a default value, so there's nothing to block on.
-  const canGoNext = true;
+  // Per-step validation. Most steps are intentionally optional (a daily
+  // check-in should stay low-friction), but a couple of fields are the
+  // actual substance of the entry and shouldn't be skippable outright.
+  const STEP_VALIDATORS = useMemo(() => ({
+    'about-you': (data) => data.currentFocus && data.currentFocus.trim().length > 0,
+    'mood-energy': () => true, // mood/energy/sleep quality always have a default value
+    'coping-tools': () => true,
+    goals: () => true,
+    milestones: () => true,
+    gratitude: () => true,
+    'support-contacts': () => true,
+    'crisis-resources': () => true, // informational only, nothing to fill in
+    custom: () => true,
+  }), []);
+
+  const STEP_VALIDATION_MESSAGES = useMemo(() => ({
+    'about-you': "Add a quick note on your current focus to continue.",
+  }), []);
+
+  const canGoNext = useMemo(() => {
+    const validator = STEP_VALIDATORS[currentStep];
+    return validator ? validator(formData) : true;
+  }, [currentStep, formData, STEP_VALIDATORS]);
+
+  const validationMessage = useMemo(() => {
+    return canGoNext ? '' : (STEP_VALIDATION_MESSAGES[currentStep] || 'Please complete this section to continue.');
+  }, [canGoNext, currentStep, STEP_VALIDATION_MESSAGES]);
 
   const goNext = useCallback(() => {
+    if (!canGoNext) {
+      showToast(validationMessage);
+      return;
+    }
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(i => i + 1);
     }
-  }, [currentStepIndex, steps.length]);
+  }, [currentStepIndex, steps.length, canGoNext, validationMessage, showToast]);
 
   const goBack = useCallback(() => {
     if (currentStepIndex > 0) {
@@ -187,6 +215,7 @@ export function useGeneratorState(showToast) {
     currentStepIndex,
     currentStep,
     canGoNext,
+    validationMessage,
     goNext,
     goBack,
     stepLabel,

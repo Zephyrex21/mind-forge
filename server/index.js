@@ -74,7 +74,26 @@ app.use('/api/user', userRouter);
 app.use(errorHandler);
 
 // --- Start ---
+function validateEnv() {
+  const required = ['MONGODB_URI', 'JWT_SECRET', 'GEMINI_API_KEY'];
+  const missing = required.filter((key) => !process.env[key] || process.env[key].startsWith('replace-with') || process.env[key].startsWith('your_'));
+
+  if (missing.length > 0) {
+    console.error('\n========================================');
+    console.error('  MindForge server cannot start');
+    console.error('========================================');
+    console.error(`  Missing or placeholder values for: ${missing.join(', ')}`);
+    console.error('  Copy server/.env.example to server/.env and fill in real values.');
+    console.error('  Without these, requests like signup/login/guest will reach the');
+    console.error('  server fine but crash mid-request with a generic 500 error —');
+    console.error('  which is exactly what a missing JWT_SECRET looks like.');
+    console.error('========================================\n');
+    process.exit(1);
+  }
+}
+
 async function start() {
+  validateEnv();
   try {
     await connectDb();
     app.listen(PORT, () => {

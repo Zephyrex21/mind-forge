@@ -3,6 +3,7 @@ import { useTheme } from '../../../app/providers/ThemeProvider';
 import { useGenerator } from '../../../hooks/useGenerator';
 import TextareaField from '../../../components/common/TextareaField';
 import { COPING_TOOL_OPTIONS } from '../../../constants/options';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 
 export default function CopingToolsStep() {
   const { vc, isDark } = useTheme();
@@ -17,6 +18,8 @@ export default function CopingToolsStep() {
     <div className="animate-fade-in">
       <h2 className={`text-2xl font-bold mb-1 ${vc.text}`}>Coping Tools & Support Systems</h2>
       <p className={`mb-6 ${vc.textSec}`}>What helps you get through hard moments? Pick everything that applies</p>
+
+      <ExampleFillButton stepKey="coping-tools" />
 
       <label className={`block text-sm font-medium mb-2 ${vc.text}`}>Tools you use</label>
       <div className="flex flex-wrap gap-2 mb-5">

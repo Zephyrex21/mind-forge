@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../../app/providers/ThemeProvider';
 import { useGenerator } from '../../../hooks/useGenerator';
 import TextareaField from '../../../components/common/TextareaField';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 
 export default function CustomStep() {
   const { vc } = useTheme();
@@ -11,6 +12,8 @@ export default function CustomStep() {
     <div className="animate-fade-in">
       <h2 className={`text-2xl font-bold mb-1 ${vc.text}`}>Custom Notes</h2>
       <p className={`mb-6 ${vc.textSec}`}>Anything else on your mind that doesn't fit elsewhere</p>
+
+      <ExampleFillButton stepKey="custom" />
       <TextareaField
         label="Notes"
         value={formData.customNotes}

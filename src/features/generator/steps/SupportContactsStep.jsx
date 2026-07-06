@@ -4,6 +4,7 @@ import { useTheme } from '../../../app/providers/ThemeProvider';
 import { useGenerator } from '../../../hooks/useGenerator';
 import InputField from '../../../components/common/InputField';
 import SelectField from '../../../components/common/SelectField';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 import { SUPPORT_RELATIONS } from '../../../constants/options';
 
 export default function SupportContactsStep() {
@@ -38,6 +39,8 @@ export default function SupportContactsStep() {
       <p className={`mb-6 text-xs flex items-center gap-1.5 ${vc.textSec}`}>
         <Lock className="w-3 h-3" /> Private to your account — never shared or shown to anyone else
       </p>
+
+      <ExampleFillButton stepKey="support-contacts" />
 
       <div className="space-y-3">
         {contacts.map((c, i) => (

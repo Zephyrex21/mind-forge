@@ -4,6 +4,7 @@ import { useGenerator } from '../../../hooks/useGenerator';
 import InputField from '../../../components/common/InputField';
 import ScaleSelector from '../../../components/common/ScaleSelector';
 import { MOOD_LABELS, ENERGY_LABELS, SLEEP_QUALITY_LABELS } from '../../../constants/options';
+import ExampleFillButton from '../../../components/common/ExampleFillButton';
 
 export default function MoodEnergyStep() {
   const { vc } = useTheme();
@@ -13,6 +14,8 @@ export default function MoodEnergyStep() {
     <div className="animate-fade-in">
       <h2 className={`text-2xl font-bold mb-1 ${vc.text}`}>Mood & Energy</h2>
       <p className={`mb-6 ${vc.textSec}`}>The core of today's check-in — be honest, not "correct"</p>
+
+      <ExampleFillButton stepKey="mood-energy" />
 
       <ScaleSelector label="How's your mood today?" value={formData.mood} onChange={v => updateForm('mood', v)} labels={MOOD_LABELS} />
       <ScaleSelector label="How's your energy?" value={formData.energy} onChange={v => updateForm('energy', v)} labels={ENERGY_LABELS} />
