@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Settings, MessageSquare, Code } from 'lucide-react';
+import { ArrowLeft, Settings, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../app/providers/ThemeProvider';
 
@@ -14,6 +14,7 @@ export default function ConversationHeader({ title, subTitle, onOpenSettings }) 
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/')}
+          aria-label="Back to home"
           className={`p-2 rounded-lg border transition-colors ${
             isDark 
               ? 'border-gray-800 bg-gray-900 hover:text-white text-gray-400' 
@@ -34,6 +35,7 @@ export default function ConversationHeader({ title, subTitle, onOpenSettings }) 
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenSettings}
+          aria-label="Open settings"
           className={`p-2 rounded-lg border transition-colors ${
             isDark 
               ? 'border-gray-800 bg-gray-900 hover:text-white text-gray-400' 

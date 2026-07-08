@@ -36,7 +36,7 @@ Mind Forge combines modern AI with a secure full-stack architecture to provide a
 | Database       | MongoDB, Mongoose         |
 | Authentication | JWT                       |
 | AI             | Google Gemini API         |
-| Deployment     | Vercel, Render            |
+| Deployment     | Vercel, Railway           |
 
 ---
 

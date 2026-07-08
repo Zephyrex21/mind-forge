@@ -1,11 +1,11 @@
 /**
  * Base fetch wrapper. The backend uses an httpOnly JWT cookie for auth,
  * so every request needs `credentials: 'include'` — without it, cross-origin
- * requests (frontend on Vercel, backend on Render) silently drop the cookie.
+ * requests (frontend on Vercel, backend on Railway) silently drop the cookie.
  */
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// Generous enough to cover a cold-starting free-tier Render instance plus
+// Generous enough to cover a cold-starting backend instance plus
 // the backend's own model-fallback retry chain, but bounded — without this,
 // a stuck request just hangs forever with the user staring at a spinner.
 const REQUEST_TIMEOUT_MS = 45_000;

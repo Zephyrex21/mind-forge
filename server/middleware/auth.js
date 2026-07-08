@@ -10,7 +10,7 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  sessionManager.refreshSession(session, res);
+  sessionManager.refreshSession(session, req, res);
   req.user = session.user;
   next();
 }
@@ -25,7 +25,7 @@ export function requireAuth(req, res, next) {
 export function optionalAuth(req, res, next) {
   const session = sessionManager.getSession(req);
   if (session) {
-    sessionManager.refreshSession(session, res);
+    sessionManager.refreshSession(session, req, res);
     req.user = session.user;
   }
   next();

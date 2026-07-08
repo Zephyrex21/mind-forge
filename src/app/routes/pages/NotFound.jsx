@@ -12,7 +12,7 @@ const pageVariants = {
 };
 
 export default function NotFound() {
-  const { vc } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <motion.div
@@ -20,16 +20,20 @@ export default function NotFound() {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="min-h-screen bg-[#0D1117] text-[#F3F4F6] flex flex-col justify-center items-center p-6 text-center"
+      className={`min-h-screen flex flex-col justify-center items-center p-6 text-center transition-colors duration-300 ${
+        isDark ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'
+      }`}
     >
       <div className="space-y-6 max-w-md">
-        <div className="w-16 h-16 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/20 flex items-center justify-center mx-auto text-[#EF4444]">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-red-500 ${
+          isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'
+        }`}>
           <ShieldAlert className="w-8 h-8" />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">404: Route Not Found</h1>
-          <p className="text-sm text-[#9CA3AF] leading-relaxed">
+          <h1 className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${isDark ? 'text-white' : 'text-gray-950'}`}>404: Route Not Found</h1>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             The page you are trying to visit does not exist or has been relocated to another workspace route.
           </p>
         </div>
@@ -37,7 +41,7 @@ export default function NotFound() {
         <div className="pt-4">
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#5B8CFF] to-[#4F7AFF] hover:from-[#4F7AFF] hover:to-[#5B8CFF] text-white font-semibold text-sm transition-all duration-200"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-500 text-white font-semibold text-sm transition-all duration-200"
           >
             <ArrowLeft className="w-4 h-4" /> Return to Homepage
           </Link>

@@ -56,7 +56,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
       }
       throw err;
     }
-    sessionManager.createSession(user, res);
+    sessionManager.createSession(user, req, res);
 
     res.status(201).json({ user: user.toSafeJSON() });
   } catch (err) {
@@ -86,7 +86,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     await UserModel.touchLogin(user.id);
-    sessionManager.createSession(user, res);
+    sessionManager.createSession(user, req, res);
 
     res.json({ user: user.toSafeJSON() });
   } catch (err) {
@@ -103,7 +103,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
 router.post('/guest', authLimiter, async (req, res, next) => {
   try {
     const user = await UserModel.createGuest();
-    sessionManager.createSession(user, res);
+    sessionManager.createSession(user, req, res);
     res.status(201).json({ user: user.toSafeJSON() });
   } catch (err) {
     next(err);
@@ -122,7 +122,7 @@ router.get('/me', async (req, res, next) => {
     const user = await UserModel.findById(session.userId);
     if (!user) return res.json({ user: null });
 
-    sessionManager.refreshSession(session, res);
+    sessionManager.refreshSession(session, req, res);
     res.json({ user: user.toSafeJSON() });
   } catch (err) {
     next(err);
@@ -183,7 +183,7 @@ router.post('/upgrade-guest', requireAuth, async (req, res, next) => {
       throw err;
     }
 
-    sessionManager.createSession(user, res);
+    sessionManager.createSession(user, req, res);
     res.json({ user: user.toSafeJSON() });
   } catch (err) {
     next(err);

@@ -3,12 +3,12 @@
  * Implements sessionStorage logic for auto-saving, restoring, and clearing session states.
  */
 
-const SESSION_PREFIX = 'readme_forge_chat_';
+const SESSION_PREFIX = 'mindforge_chat_';
 
 export const conversationCache = {
   /**
    * Save conversational progress data to sessionStorage
-   * @param {string} type - 'profile' or 'project'
+   * @param {string} type - session type key, e.g. 'checkin'
    * @param {Object} data - session data (history, answers, progress state)
    */
   saveSession: (type, data) => {
@@ -25,7 +25,7 @@ export const conversationCache = {
 
   /**
    * Retrieve conversational progress data from sessionStorage
-   * @param {string} type - 'profile' or 'project'
+   * @param {string} type - session type key, e.g. 'checkin'
    * @returns {Object|null} Cached session data or null
    */
   loadSession: (type) => {
@@ -42,7 +42,7 @@ export const conversationCache = {
 
   /**
    * Check if a valid session cache exists for this builder type
-   * @param {string} type - 'profile' or 'project'
+   * @param {string} type - session type key, e.g. 'checkin'
    * @returns {boolean}
    */
   hasSession: (type) => {
@@ -56,7 +56,7 @@ export const conversationCache = {
 
   /**
    * Clear cache for a specific builder type
-   * @param {string} type - 'profile' or 'project'
+   * @param {string} type - session type key, e.g. 'checkin'
    */
   clearSession: (type) => {
     try {

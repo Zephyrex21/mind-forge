@@ -20,10 +20,6 @@ function parseCookies(cookieHeader) {
   return list;
 }
 
-function isProdEnv() {
-  return process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
-}
-
 /**
  * Cookie attributes differ by deployment shape:
  *  - Same-site local dev (localhost frontend + localhost backend): SameSite=Lax
@@ -32,22 +28,29 @@ function isProdEnv() {
  *    registrable domains): browsers will silently DROP a SameSite=Lax cookie
  *    on programmatic fetch() calls — it's only sent on top-level navigations.
  *    This must be SameSite=None, which in turn requires Secure (HTTPS).
- * Getting this wrong doesn't error anywhere — it just makes every
- * authenticated request after login look like the user was logged out.
+ *
+ * Deliberately NOT decided from NODE_ENV/COOKIE_SECURE env vars — those are
+ * easy to leave unset on a host by mistake, and getting this wrong doesn't
+ * error anywhere, it just makes every authenticated request after login
+ * look like the user was instantly logged out. Instead this is derived
+ * directly from whether *this specific request* actually arrived over
+ * HTTPS (`req.secure`, correctly populated as long as `trust proxy` is set
+ * — see index.js), which is true unconditionally on the deployed host
+ * (Railway, Vercel, etc.) and false unconditionally on local http dev.
+ * No configuration required, and no code change needed if the hosting
+ * provider ever changes again.
  */
-function cookieString(value, maxAgeSec) {
-  const prod = isProdEnv();
-  const sameSite = prod ? 'None' : 'Lax';
+function cookieString(value, maxAgeSec, isHttps) {
+  const sameSite = isHttps ? 'None' : 'Lax';
   let str = `${AUTH_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAgeSec}`;
-  if (prod) str += '; Secure';
+  if (isHttps) str += '; Secure';
   return str;
 }
 
-function clearCookieString() {
-  const prod = isProdEnv();
-  const sameSite = prod ? 'None' : 'Lax';
+function clearCookieString(isHttps) {
+  const sameSite = isHttps ? 'None' : 'Lax';
   let str = `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=${sameSite}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0`;
-  if (prod) str += '; Secure';
+  if (isHttps) str += '; Secure';
   return str;
 }
 
@@ -56,7 +59,7 @@ export const sessionManager = {
    * Sign a JWT for this user and attach it as an httpOnly cookie.
    * @param {import('mongoose').Document} user - a Mongoose User document
    */
-  createSession(user, res) {
+  createSession(user, req, res) {
     const token = signToken({
       sub: user._id.toString(),
       email: user.email || null,
@@ -64,7 +67,7 @@ export const sessionManager = {
       isGuest: user.isGuest,
       plan: user.plan,
     });
-    res.setHeader('Set-Cookie', cookieString(token, COOKIE_MAX_AGE_SEC));
+    res.setHeader('Set-Cookie', cookieString(token, COOKIE_MAX_AGE_SEC, req.secure));
     return token;
   },
 
@@ -100,7 +103,7 @@ export const sessionManager = {
    * and writing a Set-Cookie header on literally every API call is wasted
    * work when the existing token is nowhere near expiry.
    */
-  refreshSession(session, res) {
+  refreshSession(session, req, res) {
     if (!session) return;
 
     const ageSec = session.issuedAt ? Math.floor(Date.now() / 1000) - session.issuedAt : Infinity;
@@ -113,7 +116,7 @@ export const sessionManager = {
       isGuest: session.user.isGuest,
       plan: session.user.plan,
     });
-    res.setHeader('Set-Cookie', cookieString(token, COOKIE_MAX_AGE_SEC));
+    res.setHeader('Set-Cookie', cookieString(token, COOKIE_MAX_AGE_SEC, req.secure));
   },
 
   /**
@@ -121,7 +124,7 @@ export const sessionManager = {
    * this is sufficient for the app's threat model (no sensitive financial data).
    */
   destroySession(req, res) {
-    res.setHeader('Set-Cookie', clearCookieString());
+    res.setHeader('Set-Cookie', clearCookieString(req.secure));
   },
 };
 

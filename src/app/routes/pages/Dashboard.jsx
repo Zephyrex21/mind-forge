@@ -4,14 +4,28 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useToast } from '../../providers/ToastProvider';
 import { checkinsApi } from '../../../services/checkinsApi';
 import {
-  Flame, BookOpen, Moon, Smile, ChevronRight,
-  Plus, Copy, ExternalLink, Settings, LayoutDashboard,
-  RefreshCw, NotebookPen, Menu, X, LogOut,
+  Flame, BookOpen, Moon, Smile, Zap, BedDouble, ChevronRight,
+  Plus, ExternalLink, Settings, LayoutDashboard,
+  RefreshCw, NotebookPen, Menu, X, LogOut, Mail, CalendarDays,
+  HeartHandshake, Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MoodTrendChart from '../../../components/wellness/MoodTrendChart';
 import CheckinStreakRing from '../../../components/wellness/CheckinStreakRing';
 import AchievementBadges from '../../../components/wellness/AchievementBadges';
+import GuestUpgradeCard from '../../../components/wellness/GuestUpgradeCard';
+import MarkdownRenderer from '../../../components/common/MarkdownRenderer';
+
+function StatCard({ icon: Icon, label, value, suffix = '', isDark }) {
+  return (
+    <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
+      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1">
+        <Icon className="w-3.5 h-3.5" /> {label}
+      </div>
+      <div className="text-2xl font-black font-mono">{value ?? '—'}{value != null ? suffix : ''}</div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -65,6 +79,10 @@ export default function Dashboard() {
     );
   }
 
+  const memberSince = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    : null;
+
   return (
     <div className={`min-h-screen flex ${vc.bg} ${vc.text} transition-colors duration-300 font-sans text-left`}>
 
@@ -102,6 +120,7 @@ export default function Dashboard() {
           </button>
         </nav>
 
+        {/* Account info */}
         <div className="p-4 border-t border-gray-300 dark:border-gray-800 space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shadow-sm">
@@ -110,6 +129,17 @@ export default function Dashboard() {
             <div className="truncate">
               <div className="text-xs font-bold truncate">{user.displayName}</div>
               <div className="text-[10px] text-gray-500 truncate">{user.isGuest ? 'Guest account' : user.email}</div>
+            </div>
+          </div>
+          <div className="space-y-1 text-[10px] text-gray-500">
+            {!user.isGuest && user.email && (
+              <div className="flex items-center gap-1.5 truncate"><Mail className="w-3 h-3 flex-shrink-0" /> {user.email}</div>
+            )}
+            {memberSince && (
+              <div className="flex items-center gap-1.5"><CalendarDays className="w-3 h-3 flex-shrink-0" /> Member since {memberSince}</div>
+            )}
+            <div className="flex items-center gap-1.5 capitalize">
+              <Sparkles className="w-3 h-3 flex-shrink-0" /> {user.plan} plan
             </div>
           </div>
           <button
@@ -136,7 +166,7 @@ export default function Dashboard() {
             </button>
             <div>
               <h1 className="text-base font-bold">Your Wellness Dashboard</h1>
-              <p className="text-[10px] text-gray-500">Track your mood, streak, and saved check-ins</p>
+              <p className="text-[10px] text-gray-500">Everything about your check-ins, mood, and progress in one place</p>
             </div>
           </div>
           <button
@@ -164,6 +194,9 @@ export default function Dashboard() {
         )}
 
         <div className="max-w-5xl w-full mx-auto px-6 py-8 space-y-6">
+          {/* Guest upgrade prompt */}
+          {user.isGuest && <GuestUpgradeCard />}
+
           {/* Welcome Banner */}
           <div className={`p-6 rounded-2xl border flex flex-col sm:flex-row items-center gap-5 justify-between ${
             isDark ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-gray-200 shadow-sm'
@@ -185,32 +218,73 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Stat cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className={`p-4 rounded-2xl border flex flex-col items-center justify-center ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
+          {/* Streak ring + stat cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className={`col-span-2 sm:col-span-1 p-4 rounded-2xl border flex flex-col items-center justify-center ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
               <CheckinStreakRing streak={stats?.currentStreak || 0} size={90} />
             </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Total Check-ins</div>
-              <div className="text-2xl font-black font-mono">{stats?.totalCheckins || 0}</div>
-              <div className="text-[9px] text-gray-600">Every entry counts</div>
-            </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><Smile className="w-3.5 h-3.5" /> Avg Mood (30d)</div>
-              <div className="text-2xl font-black font-mono">{stats?.avgMood ?? '—'}</div>
-              <div className="text-[9px] text-gray-600">Scale of 1-5</div>
-            </div>
-            <div className={`p-4 rounded-2xl border space-y-2 ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1"><Moon className="w-3.5 h-3.5" /> Avg Sleep (30d)</div>
-              <div className="text-2xl font-black font-mono">{stats?.avgSleepHours ?? '—'}{stats?.avgSleepHours ? 'h' : ''}</div>
-              <div className="text-[9px] text-gray-600">Hours per night</div>
-            </div>
+            <StatCard icon={BookOpen} label="Total Check-ins" value={stats?.totalCheckins || 0} isDark={isDark} />
+            <StatCard icon={Smile} label="Avg Mood (30d)" value={stats?.avgMood} suffix=" / 5" isDark={isDark} />
+            <StatCard icon={Zap} label="Avg Energy (30d)" value={stats?.avgEnergy} suffix=" / 5" isDark={isDark} />
+            <StatCard icon={Moon} label="Avg Sleep (30d)" value={stats?.avgSleepHours} suffix="h" isDark={isDark} />
+            <StatCard icon={BedDouble} label="Sleep Quality (30d)" value={stats?.avgSleepQuality} suffix=" / 5" isDark={isDark} />
           </div>
 
           {/* Mood trend chart */}
           <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4">Mood & Energy Trend</h3>
             <MoodTrendChart trend={stats?.trend || []} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Most-used coping tools */}
+            <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-1.5">
+                <HeartHandshake className="w-4 h-4 text-purple-500" /> What Helps You Most
+              </h3>
+              {stats?.topCopingTools?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {stats.topCopingTools.map(({ tool, count }) => (
+                    <span
+                      key={tool}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 ${
+                        isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {tool}
+                      <span className={`px-1.5 rounded-full text-[10px] font-bold ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>{count}×</span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-xs ${vc.textSec}`}>Log a few check-ins with coping tools to see your patterns here.</p>
+              )}
+            </div>
+
+            {/* Latest reflection preview */}
+            <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-indigo-500" /> Latest Reflection
+              </h3>
+              {stats?.latestReflection ? (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-500">
+                    {new Date(stats.latestReflection.createdAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                  <div className="text-xs leading-relaxed line-clamp-5 github-markdown-body">
+                    <MarkdownRenderer content={stats.latestReflection.aiReflection} />
+                  </div>
+                  <button
+                    onClick={() => navigate('/my-checkins')}
+                    className="text-xs font-semibold text-indigo-500 hover:opacity-80 transition-opacity flex items-center gap-1 pt-1"
+                  >
+                    Read full reflection <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <p className={`text-xs ${vc.textSec}`}>Generate your first reflection to see it here.</p>
+              )}
+            </div>
           </div>
 
           {/* Achievements */}

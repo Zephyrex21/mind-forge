@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   Sparkles, Loader2, RefreshCw, Copy, ArrowLeft,
-  Save, LifeBuoy, Phone,
+  Save, LifeBuoy, Phone, LayoutDashboard, Check,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../app/providers/ThemeProvider';
 import { useGenerator } from '../../hooks/useGenerator';
 import { useToast } from '../../app/providers/ToastProvider';
@@ -20,8 +21,10 @@ export default function GeneratePreview() {
   const { vc, isDark } = useTheme();
   const { showToast } = useToast();
   const { executeWithAuth } = useAuth();
+  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [checkinId, setCheckinId] = useState(null);
+  const [justSaved, setJustSaved] = useState(false);
 
   const {
     formData,
@@ -55,6 +58,7 @@ export default function GeneratePreview() {
           setCheckinId(saved._id);
           showToast('Check-in saved!');
         }
+        setJustSaved(true);
       } catch (err) {
         showToast(err.message || 'Failed to save check-in');
       } finally {
@@ -147,7 +151,7 @@ export default function GeneratePreview() {
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
                 <button
-                  onClick={() => executeWithAuth(generateReflection, 'reflection generation')}
+                  onClick={() => { setJustSaved(false); executeWithAuth(generateReflection, 'reflection generation'); }}
                   disabled={isGenerating}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btnSec} ${isGenerating ? 'opacity-70 cursor-wait' : ''}`}
                 >
@@ -182,6 +186,17 @@ export default function GeneratePreview() {
                   Download .md
                 </button>
               </div>
+
+              {justSaved && checkinId && (
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 border ${
+                    isDark ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300' : 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                  }`}
+                >
+                  <Check className="w-4 h-4" /> Saved! <LayoutDashboard className="w-4 h-4 ml-1" /> View Dashboard
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -191,7 +206,7 @@ export default function GeneratePreview() {
             <label className={`block text-sm font-medium mb-2 ${vc.text}`}>Quick Edit</label>
             <textarea
               value={editMarkdown}
-              onChange={e => setEditMarkdown(e.target.value)}
+              onChange={e => { setEditMarkdown(e.target.value); setJustSaved(false); }}
               rows={16}
               placeholder={isGenerating ? 'Regenerating...' : ''}
               className={`w-full px-4 py-3 rounded-xl font-mono text-xs transition-all outline-none resize-none ${vc.input}`}

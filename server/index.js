@@ -15,26 +15,31 @@ const PORT = process.env.PORT || 3001;
 // Minor hardening: don't advertise the framework in every response.
 app.disable('x-powered-by');
 
-// Render (and most PaaS hosts) sit behind a reverse proxy that adds an
-// X-Forwarded-For header. Without this, Express's req.ip resolves to the
-// proxy's internal IP for every request — meaning every user on the app
-// shares one rate-limit bucket instead of getting their own, and
-// express-rate-limit will flag the X-Forwarded-For/trust-proxy mismatch.
-// "1" trusts exactly one hop, matching Render's single reverse proxy.
+// Most PaaS hosts (Railway, Render, Fly.io, etc.) sit behind a reverse
+// proxy that terminates HTTPS and forwards to the app over plain HTTP,
+// adding an X-Forwarded-Proto/X-Forwarded-For header. Without this,
+// Express's req.ip resolves to the proxy's internal IP for every request
+// — meaning every user shares one rate-limit bucket instead of getting
+// their own — and req.secure stays false even though the browser is
+// really talking HTTPS, silently breaking the SameSite=None cookie logic
+// in sessionManager.js. "1" trusts exactly one hop, matching a standard
+// single-proxy PaaS setup (Railway included).
 app.set('trust proxy', 1);
 
 // Health check — registered before the rate limiter and CORS on purpose.
-// Render (or an external uptime monitor) may ping this frequently to keep
-// the free-tier instance warm; if it counted against the global rate
-// limit, frequent health checks could eat into real users' quota.
+// The host (or an external uptime monitor) may ping this frequently to
+// keep the instance warm; if it counted against the global rate limit,
+// frequent health checks could eat into real users' quota.
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // --- Middleware ---
+const stripTrailingSlash = (url) => url?.replace(/\/+$/, '');
+
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.CORS_ORIGIN,
+  stripTrailingSlash(process.env.CORS_ORIGIN),
 ].filter(Boolean);
 
 app.use(cors({
@@ -42,7 +47,11 @@ app.use(cors({
     // Allow requests with no origin (Postman, curl, health checks)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    // Compare with trailing slashes stripped — CORS_ORIGIN set to
+    // "https://app.vercel.app/" (trailing slash) would otherwise silently
+    // never match the Origin header (which never has one), blocking every
+    // request with no indication of why.
+    if (allowedOrigins.includes(stripTrailingSlash(origin))) {
       return callback(null, true);
     }
 
@@ -98,6 +107,7 @@ async function start() {
     await connectDb();
     app.listen(PORT, () => {
       console.log(`Mind Forge API is running on port ${PORT}`);
+      console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);

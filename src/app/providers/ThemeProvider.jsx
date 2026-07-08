@@ -105,13 +105,29 @@ export function ThemeProvider({ children }) {
     return localStorage.getItem('builderStyle') || 'classic'; // 'classic' or 'conversation'
   });
 
+  // Track the OS-level preference as actual React state (not just read once) —
+  // so isDark below reacts live when it changes, not just when the user
+  // explicitly picks a theme. Previously this was only synced onto the DOM
+  // <html> class directly, leaving the isDark value itself stale whenever
+  // theme === 'system' and the OS preference changed — meaning every
+  // isDark ? X : Y conditional in the app (icons, colors, etc.) could
+  // silently disagree with what the CSS was actually showing.
+  const [systemIsDark, setSystemIsDark] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e) => setSystemIsDark(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   // Calculate if dark mode is active
   const isDark = useMemo(() => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
+    if (theme === 'system') return systemIsDark;
     return theme === 'dark';
-  }, [theme]);
+  }, [theme, systemIsDark]);
 
   // Synchronize the 'dark' class on <html> tag
   useEffect(() => {
@@ -122,24 +138,6 @@ export function ThemeProvider({ children }) {
       root.classList.remove('dark');
     }
   }, [isDark]);
-
-  // Listen to system preference changes when 'system' is selected
-  useEffect(() => {
-    if (theme !== 'system') return;
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const root = window.document.documentElement;
-      if (mediaQuery.matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
 
   // Sync to localStorage
   const updateTheme = useCallback((newTheme) => {

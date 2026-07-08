@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://mind-forge-api.onrender.com/api/:path*"
+      "destination": "https://mind-forge-production.up.railway.app/api/:path*"
     },
     {
       "source": "/((?!api).*)",
