@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../providers/ThemeProvider';
 import {
   ArrowRight, Github, Sun, Moon, Menu, X, HeartPulse,
-  Flame, Sparkles, Check, ChevronDown, Smile,
+  Flame, Sparkles, Check, ChevronDown, Smile, Play,
   ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,20 +59,30 @@ export default function HomePortal() {
 
   // Interactive mockup state machine
   const [mockupStep, setMockupStep] = useState(0);
+  // Bumped on every "View Demo" click. setMockupStep(0) alone is a no-op
+  // in React when mockupStep is already 0 (the common case, since the demo
+  // auto-cycles 0→1→2→0 continuously on its own) — this key forces the
+  // effect below to genuinely restart the sequence every time.
+  const [demoReplayKey, setDemoReplayKey] = useState(0);
 
   useEffect(() => {
     let timer;
     if (mockupStep === 0) {
       timer = setTimeout(() => setMockupStep(1), 1800);
     } else if (mockupStep === 1) {
-      timer = setTimeout(() => setMockupStep(2), 2000);
+      timer = setTimeout(() => setMockupStep(2), 1800);
     } else if (mockupStep === 2) {
-      timer = setTimeout(() => setMockupStep(0), 6000);
+      timer = setTimeout(() => setMockupStep(3), 3200);
+    } else if (mockupStep === 3) {
+      timer = setTimeout(() => setMockupStep(0), 3600);
     }
     return () => clearTimeout(timer);
-  }, [mockupStep]);
+  }, [mockupStep, demoReplayKey]);
 
-  const triggerMockupDemo = () => setMockupStep(0);
+  const triggerMockupDemo = () => {
+    setMockupStep(1); // jump straight to the animated step for instant feedback
+    setDemoReplayKey((k) => k + 1);
+  };
 
   return (
     <motion.div
@@ -259,9 +269,9 @@ export default function HomePortal() {
             </Link>
             <button
               onClick={triggerMockupDemo}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+              className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200 active:scale-[0.98]"
             >
-              View Demo
+              <Play className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" /> Watch Demo
             </button>
           </div>
         </div>
@@ -283,38 +293,78 @@ export default function HomePortal() {
             </div>
 
             <div className="p-6 min-h-[300px] flex flex-col font-mono text-xs select-none bg-white dark:bg-[#0D1117] transition-colors duration-300">
-              <AnimatePresence mode="wait">
-                {mockupStep === 0 && (
-                  <motion.div key="step-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 text-left">
-                    <div className="text-gray-700 dark:text-gray-400 flex items-center gap-2">
-                      <span className="text-indigo-600 dark:text-indigo-400">$</span> mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
-                    </div>
-                    <div className="text-gray-500 dark:text-gray-500">Ready to reflect. Click "View Demo" to replay.</div>
-                  </motion.div>
-                )}
+              <div className="flex-1">
+                <AnimatePresence mode="wait">
+                  {mockupStep === 0 && (
+                    <motion.div key="step-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 text-left">
+                      <div className="text-gray-700 dark:text-gray-400 flex items-center gap-2">
+                        <span className="text-indigo-600 dark:text-indigo-400">$</span> mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
+                      </div>
+                      <div className="text-gray-500 dark:text-gray-500">Ready to reflect. Click "Watch Demo" to replay.</div>
+                    </motion.div>
+                  )}
 
-                {mockupStep === 1 && (
-                  <motion.div key="step-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
-                    <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 animate-pulse font-bold">
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Reflecting on today's check-in...
-                    </div>
-                    <div className="space-y-1.5 pl-4 text-gray-600 dark:text-gray-500">
-                      <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted</div>
-                      <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Coping tools reviewed</div>
-                      <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed</div>
-                    </div>
-                  </motion.div>
-                )}
+                  {mockupStep === 1 && (
+                    <motion.div key="step-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
+                      <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 animate-pulse font-bold">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Reflecting on today's check-in...
+                      </div>
+                      <div className="space-y-1.5 pl-4 text-gray-600 dark:text-gray-500">
+                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted</div>
+                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Coping tools reviewed</div>
+                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed</div>
+                      </div>
+                    </motion.div>
+                  )}
 
-                {mockupStep === 2 && (
-                  <motion.div key="step-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
-                    <div className="text-indigo-500 font-bold">## Today's Reflection</div>
-                    <div className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                      It sounds like today asked a lot of you on not much sleep. Noticing that and still showing up for your check-in is worth acknowledging...
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  {mockupStep === 2 && (
+                    <motion.div key="step-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
+                      <div className="text-indigo-500 font-bold">## Today's Reflection</div>
+                      <div className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        It sounds like today asked a lot of you on not much sleep. Noticing that and still showing up for your check-in is worth acknowledging...
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {mockupStep === 3 && (
+                    <motion.div key="step-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
+                      <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold">
+                        <LayoutDashboard className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Saved to your dashboard
+                      </div>
+                      <div className="flex items-center gap-4 pt-1">
+                        <div className="flex items-center gap-1.5 text-orange-500 font-bold">
+                          <Flame className="w-4 h-4" /> 7-day streak
+                        </div>
+                        <div className="text-gray-500 dark:text-gray-500">·</div>
+                        <div className="text-gray-600 dark:text-gray-400">avg mood 3.6/5</div>
+                      </div>
+                      <div className="flex items-end gap-1 h-10 pt-1">
+                        {[40, 65, 50, 80, 60, 90, 70].map((h, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${h}%` }}
+                            transition={{ delay: i * 0.06, duration: 0.4, ease: 'easeOut' }}
+                            className="w-3 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400"
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Progress dots — signals a guided sequence rather than a one-off animation */}
+              <div className="flex items-center gap-1.5 pt-4 mt-auto">
+                {[0, 1, 2, 3].map((step) => (
+                  <span
+                    key={step}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      mockupStep === step ? 'w-6 bg-indigo-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -322,50 +372,90 @@ export default function HomePortal() {
 
       {/* Features */}
       <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto mb-16 space-y-4"
+        >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</h2>
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Built to be quick, honest, and genuinely supportive.</p>
-        </div>
+        </motion.div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="p-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 text-left space-y-3 hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                <Icon className="w-5 h-5 text-indigo-500" />
+          {FEATURES.map(({ icon: Icon, title, desc }, i) => (
+            <motion.div
+              key={title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
+              whileHover={{ y: -4 }}
+              className="group p-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 text-left space-y-3 hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300"
+            >
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500 group-hover:scale-110 transition-all duration-300">
+                <Icon className="w-5 h-5 text-indigo-500 group-hover:text-white transition-colors duration-300" />
               </div>
               <h3 className="font-bold text-sm text-gray-950 dark:text-white">{title}</h3>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
       <section id="how-it-works" className="relative max-w-5xl mx-auto px-6 py-20 border-t border-gray-200 dark:border-gray-800 text-center transition-colors duration-300">
-        <div className="max-w-2xl mx-auto mb-16 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl mx-auto mb-16 space-y-4"
+        >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</h2>
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Three steps, every day, in under two minutes.</p>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-10">
-          {HOW_IT_WORKS.map((item) => (
-            <div key={item.step} className="flex flex-col items-center text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm font-bold text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-sm transition-colors duration-300">
+        </motion.div>
+        <div className="relative grid sm:grid-cols-3 gap-10">
+          {/* Connecting line behind the numbered circles, signaling a sequence */}
+          <div className="hidden sm:block absolute top-6 left-[16.5%] right-[16.5%] h-px bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-500/30 to-transparent" />
+          {HOW_IT_WORKS.map((item, i) => (
+            <motion.div
+              key={item.step}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.45, delay: i * 0.15 }}
+              className="relative flex flex-col items-center text-center space-y-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900 border-2 border-indigo-200 dark:border-indigo-500/30 text-sm font-bold text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-sm transition-colors duration-300">
                 {item.step}
               </div>
               <h3 className="text-base font-bold text-gray-950 dark:text-white pt-1">{item.title}</h3>
               <p className="text-gray-700 dark:text-gray-400 text-xs leading-relaxed max-w-[200px]">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* Preview Section */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto mb-16 space-y-4"
+        >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</h2>
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Mood trends, streaks, and achievements — all computed from your own check-ins.</p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/40 p-4 max-w-5xl mx-auto overflow-hidden shadow-xl transition-colors duration-300">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/40 p-4 max-w-5xl mx-auto overflow-hidden shadow-xl transition-colors duration-300">
           <div className="flex items-center gap-1.5 pb-3 border-b border-gray-200 dark:border-gray-800 px-2">
             <span className="w-3 h-3 rounded-full bg-red-400 dark:bg-red-500/60" />
             <span className="w-3 h-3 rounded-full bg-yellow-400 dark:bg-yellow-500/60" />
@@ -413,15 +503,21 @@ export default function HomePortal() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* FAQ Section */}
       <section id="faq" className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div className="text-center mb-16 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16 space-y-4"
+        >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</h2>
           <p className="text-gray-600 dark:text-gray-400 text-base">Everything you need to know about using MindForge.</p>
-        </div>
+        </motion.div>
 
         <div className="space-y-4">
           {FAQS.map((faq, idx) => (
