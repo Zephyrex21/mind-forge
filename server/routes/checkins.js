@@ -144,3 +144,4 @@ function toNumberOrUndefined(value) {
 }
 
 export default router;
+export { sanitizeBody, toNumberOrUndefined };

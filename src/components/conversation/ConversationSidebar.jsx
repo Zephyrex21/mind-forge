@@ -16,7 +16,7 @@ const SECTIONS = [
   { key: 'Preview', label: 'Review & Reflect', icon: CheckCircle2 }
 ];
 
-export default function ConversationSidebar({ progress, currentSection, onJumpToSection }) {
+export default function ConversationSidebar({ progress, currentSection }) {
   const { vc, isDark } = useTheme();
 
   return (
@@ -62,7 +62,7 @@ export default function ConversationSidebar({ progress, currentSection, onJumpTo
       <div className="flex-1 overflow-y-auto p-5 text-left space-y-3.5">
         <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Milestones</h3>
         <nav className="space-y-1.5">
-          {SECTIONS.map((sec, idx) => {
+          {SECTIONS.map((sec) => {
             const Icon = sec.icon;
             
             // Map active question sections to highlight the current step

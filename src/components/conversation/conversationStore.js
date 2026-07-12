@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useGenerator } from '../../hooks/useGenerator';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
+import { GeneratorContext } from '../../hooks/useGenerator';
 import { conversationCache } from './conversationCache';
 import { ConversationEngine } from './conversationEngine';
 import { CHECKIN_QUESTIONS } from './questionRegistry';
@@ -13,12 +13,13 @@ const SESSION_KEY = 'checkin';
  * state (from GeneratorProvider in CheckInBuilder).
  */
 export function useConversationStore() {
-  let generatorContext = null;
-  try {
-    generatorContext = useGenerator();
-  } catch (e) {
-    // Context not available — fall back to standalone local state below.
-  }
+  // Read the context directly rather than calling useGenerator() (which
+  // throws when there's no Provider). Hooks must never be wrapped in
+  // try/catch — if the throw ever actually fired, React's hook-order
+  // bookkeeping for that render would break, risking a cascading crash on
+  // the next render. useContext always executes consistently and simply
+  // returns null when there's no Provider above it.
+  const generatorContext = useContext(GeneratorContext);
 
   const [localFormData, setLocalFormData] = useState(INITIAL_FORM_DATA);
 
@@ -28,7 +29,7 @@ export function useConversationStore() {
     generateReflection: async () => {},
   };
 
-  const { formData, updateForm } = generator;
+  const { updateForm } = generator;
 
   const [currentQuestionId, setCurrentQuestionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -46,6 +47,19 @@ export function useConversationStore() {
     else if (hours < 18) timeGreeting = 'Good afternoon';
     return `${timeGreeting}. Let's do today's check-in together.`;
   }, []);
+
+  const startFreshConversation = useCallback(() => {
+    const greetingText = getGreeting();
+    setMessages([{
+      id: 'greeting',
+      sender: 'assistant',
+      text: greetingText,
+      timestamp: Date.now(),
+      isGreeting: true,
+    }]);
+    setCurrentQuestionId(null);
+    setHistoryPath([]);
+  }, [getGreeting]);
 
   const saveToCache = useCallback((updatedMessages, updatedQuestionId, updatedPath) => {
     conversationCache.saveSession(SESSION_KEY, {
@@ -74,8 +88,7 @@ export function useConversationStore() {
     conversationCache.clearSession(SESSION_KEY);
     setShowResumeDialog(false);
     startFreshConversation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startFreshConversation]);
 
   useEffect(() => {
     if (conversationCache.hasSession(SESSION_KEY)) {
@@ -83,21 +96,7 @@ export function useConversationStore() {
     } else {
       startFreshConversation();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const startFreshConversation = () => {
-    const greetingText = getGreeting();
-    setMessages([{
-      id: 'greeting',
-      sender: 'assistant',
-      text: greetingText,
-      timestamp: Date.now(),
-      isGreeting: true,
-    }]);
-    setCurrentQuestionId(null);
-    setHistoryPath([]);
-  };
+  }, [startFreshConversation]);
 
   const appendMessage = useCallback((msg, nextQId = currentQuestionId, path = historyPath) => {
     setMessages(prev => {
@@ -173,7 +172,7 @@ export function useConversationStore() {
     }
 
     return false;
-  }, [historyPath, currentQuestionId, engine, generator.formData, askQuestion, appendMessage, discardSession]);
+  }, [historyPath, currentQuestionId, engine, generator.formData, askQuestion, appendMessage, discardSession, startFreshConversation]);
 
   const submitAnswer = useCallback((value, formattedLabel = null) => {
     if (!currentQuestionId) return;

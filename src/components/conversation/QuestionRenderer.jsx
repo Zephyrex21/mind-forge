@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ArrowRight, HeartHandshake } from 'lucide-react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 

@@ -197,3 +197,4 @@ function clamp(value, min, max) {
 }
 
 export default router;
+export { clamp };

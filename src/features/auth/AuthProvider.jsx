@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [pendingDescription, setPendingDescription] = useState('');
 
   const refreshUser = useCallback(async () => {
     try {
@@ -82,7 +83,7 @@ export function AuthProvider({ children }) {
       showToast('Logged out');
       window.location.href = '/';
     } catch (err) {
-      showToast('Logout failed');
+      showToast(err.message || 'Logout failed');
     }
   }, [showToast]);
 
@@ -90,12 +91,13 @@ export function AuthProvider({ children }) {
 
   // Trigger actions (like generation) that require being signed in — opens
   // the login modal if needed, and resumes the action right after.
-  const executeWithAuth = useCallback((actionFn, description = 'perform this action') => {
+  const executeWithAuth = useCallback((actionFn, description = '') => {
     if (user) {
       actionFn();
       return;
     }
     setPendingAction(() => actionFn);
+    setPendingDescription(description);
     setIsLoginModalOpen(true);
   }, [user]);
 
@@ -122,7 +124,8 @@ export function AuthProvider({ children }) {
       {children}
       {isLoginModalOpen && (
         <LoginModal
-          onClose={() => { setIsLoginModalOpen(false); setPendingAction(null); }}
+          description={pendingDescription}
+          onClose={() => { setIsLoginModalOpen(false); setPendingAction(null); setPendingDescription(''); }}
           onLogin={login}
           onRegister={register}
           onGuest={continueAsGuest}

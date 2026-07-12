@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useToast } from '../../providers/ToastProvider';
@@ -23,21 +23,21 @@ export default function CheckIns() {
   const [viewMode, setViewMode] = useState('grid');
   const [expanded, setExpanded] = useState(null);
 
-  const loadCheckins = async () => {
+  const loadCheckins = useCallback(async () => {
     try {
       setLoading(true);
       const data = await checkinsApi.list();
       setCheckins(data);
     } catch (err) {
-      showToast('Failed to load check-ins');
+      showToast(err.message || 'Failed to load check-ins');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     if (user) loadCheckins();
-  }, [user]);
+  }, [user, loadCheckins]);
 
   const filtered = useMemo(() => {
     return checkins.filter(c => {
@@ -53,7 +53,7 @@ export default function CheckIns() {
       await checkinsApi.toggleFavorite(id);
       loadCheckins();
     } catch (err) {
-      showToast('Failed to update favorite status');
+      showToast(err.message || 'Failed to update favorite status');
     }
   };
 
@@ -64,7 +64,7 @@ export default function CheckIns() {
       loadCheckins();
       showToast('Check-in deleted');
     } catch (err) {
-      showToast('Failed to delete check-in');
+      showToast(err.message || 'Failed to delete check-in');
     }
   };
 

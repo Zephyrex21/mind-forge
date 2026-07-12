@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "db:reset": "node db/reinit.js"
+    "db:reset": "node db/reinit.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint ."
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,6 +18,13 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.5"
+    "mongoose": "^8.9.5",
+    "helmet": "^8.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8",
+    "eslint": "^9.17.0",
+    "@eslint/js": "^9.17.0",
+    "globals": "^15.14.0"
   }
 }

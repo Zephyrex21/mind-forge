@@ -88,30 +88,52 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file inside the server directory and configure the following:
+Copy `server/.env.example` to `server/.env` and fill in real values:
 
 ```env
-PORT=
+PORT=3001
+NODE_ENV=development
 MONGODB_URI=
 JWT_SECRET=
+JWT_EXPIRES_IN=7d
 GEMINI_API_KEY=
-CLIENT_URL=
+CORS_ORIGIN=http://localhost:5173
 ```
+
+The server validates these at startup and refuses to start with a clear error message if any are missing or still contain placeholder text — so a misconfigured `.env` shows up immediately rather than as a mysterious crash later.
 
 ### Run the project
 
-Frontend
+From the project root, install both frontend and backend dependencies in one step:
+
+```bash
+npm run setup
+```
+
+Then start both servers together (color-coded FRONTEND/BACKEND output):
 
 ```bash
 npm run dev
 ```
 
-Backend
+---
+
+## Testing & Code Quality
+
+Both the frontend and backend have real automated test suites (Vitest) and lint configs (ESLint flat config).
 
 ```bash
+# Frontend (from project root)
+npm test        # run tests once
+npm run lint     # lint
+
+# Backend
 cd server
-npm run dev
+npm test
+npm run lint
 ```
+
+CI runs both automatically on every push/PR via GitHub Actions (`.github/workflows/ci.yml`) — lint, test, and build for the frontend; lint and test for the backend.
 
 ---
 

@@ -49,7 +49,7 @@ export default function Dashboard() {
         setStats(statsData);
         setRecentCheckins(checkinsData.slice(0, 3));
       } catch (err) {
-        showToast('Error loading dashboard');
+        showToast(err.message || 'Error loading dashboard');
       } finally {
         setLoading(false);
       }
@@ -66,7 +66,7 @@ export default function Dashboard() {
       const data = await checkinsApi.list();
       setRecentCheckins(data.slice(0, 3));
     } catch (err) {
-      showToast('Failed to delete check-in');
+      showToast(err.message || 'Failed to delete check-in');
     }
   };
 

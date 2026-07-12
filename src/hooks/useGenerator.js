@@ -82,7 +82,7 @@ export function useGeneratorState(showToast) {
   // check-in should stay low-friction), but a couple of fields are the
   // actual substance of the entry and shouldn't be skippable outright.
   const STEP_VALIDATORS = useMemo(() => ({
-    'about-you': (data) => data.currentFocus && data.currentFocus.trim().length > 0,
+    'about-you': (data) => Boolean(data.currentFocus && data.currentFocus.trim().length > 0),
     'mood-energy': () => true, // mood/energy/sleep quality always have a default value
     'coping-tools': () => true,
     goals: () => true,

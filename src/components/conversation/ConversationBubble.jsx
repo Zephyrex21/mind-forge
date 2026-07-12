@@ -42,7 +42,7 @@ const UserAvatar = ({ username, name }) => {
 };
 
 export default function ConversationBubble({ message, username, name, children }) {
-  const { vc, isDark } = useTheme();
+  const { isDark } = useTheme();
   const isAssistant = message.sender === 'assistant';
 
   if (isAssistant) {

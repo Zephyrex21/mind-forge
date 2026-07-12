@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 import {
   User, Smile, HeartHandshake, Target, Edit2,
-  Check, Loader2, Copy, Download, Save, LayoutDashboard,
+  Check, Loader2, Copy, Download, Save, LayoutDashboard, RefreshCw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MarkdownRenderer from '../common/MarkdownRenderer';
@@ -53,7 +53,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
       } finally {
         setIsSaving(false);
       }
-    }, 'check-in save');
+    }, 'saving your check-in');
   };
 
   const handleCopy = () => {
@@ -104,6 +104,13 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
                   Raw
                 </button>
               </div>
+              <button
+                onClick={() => { setJustSaved(false); executeWithAuth(generateReflection, 'generating your reflection'); }}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} /> {isGenerating ? 'Regenerating...' : 'Regenerate'}
+              </button>
               <button onClick={handleCopy} disabled={isGenerating || !generatedMarkdown} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
               </button>
@@ -203,7 +210,7 @@ export default function ReviewScreen({ generator, onJumpToQuestion }) {
       {!hasGeneratedOnce ? (
         <div className="flex justify-center pt-4">
           <button
-            onClick={() => executeWithAuth(generateReflection, 'reflection generation')}
+            onClick={() => executeWithAuth(generateReflection, 'generating your reflection')}
             disabled={isGenerating}
             className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all duration-150 active:scale-[0.98] shadow-lg shadow-indigo-500/15 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >

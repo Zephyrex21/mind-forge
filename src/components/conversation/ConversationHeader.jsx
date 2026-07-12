@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../app/providers/ThemeProvider';
 
 export default function ConversationHeader({ title, subTitle, onOpenSettings }) {
-  const { vc, isDark } = useTheme();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   return (

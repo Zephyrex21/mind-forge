@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { connectDb } from './db/connection.js';
 import generateRouter from './routes/generate.js';
@@ -14,6 +15,12 @@ const PORT = process.env.PORT || 3001;
 
 // Minor hardening: don't advertise the framework in every response.
 app.disable('x-powered-by');
+
+// Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.).
+// CSP is disabled here — this server is a pure JSON API (no HTML/inline
+// scripts to protect), and a strict default CSP would need per-directive
+// tuning to avoid breaking things for no real benefit on an API-only host.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Most PaaS hosts (Railway, Render, Fly.io, etc.) sit behind a reverse
 // proxy that terminates HTTPS and forwards to the app over plain HTTP,

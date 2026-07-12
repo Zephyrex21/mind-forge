@@ -4,7 +4,7 @@ import { useTheme } from '../../app/providers/ThemeProvider';
 import EmailAuthForm from './EmailAuthForm';
 import GuestButton from './GuestButton';
 
-export default function LoginModal({ onClose, onLogin, onRegister, onGuest }) {
+export default function LoginModal({ onClose, onLogin, onRegister, onGuest, description }) {
   const { vc, isDark } = useTheme();
   const modalRef = useRef(null);
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -66,7 +66,9 @@ export default function LoginModal({ onClose, onLogin, onRegister, onGuest }) {
           {mode === 'signup' ? 'Create your account' : 'Welcome back'}
         </h3>
         <p className={`text-xs leading-relaxed max-w-sm mb-6 ${vc.textSec}`}>
-          Sign in to save your check-ins and track your streak over time — or continue as a guest with zero setup.
+          {description
+            ? `Sign in to finish ${description} — your check-ins are saved and your streak is tracked from here on, or continue as a guest with zero setup.`
+            : 'Sign in to save your check-ins and track your streak over time — or continue as a guest with zero setup.'}
         </p>
 
         <EmailAuthForm mode={mode} onSubmit={handleEmailSubmit} disabled={guestLoading} />

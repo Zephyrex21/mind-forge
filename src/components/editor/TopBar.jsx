@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Sun, Moon, Settings } from 'lucide-react';
+import { Sun, Moon, Settings } from 'lucide-react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 import { useGenerator } from '../../hooks/useGenerator';
 
@@ -45,6 +45,13 @@ export default function TopBar() {
           className={`p-2 rounded-lg transition-all hover:opacity-70 ${vc.text}`}
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Open settings"
+          className={`p-2 rounded-lg transition-all hover:opacity-70 ${vc.text}`}
+        >
+          <Settings className="w-4 h-4" />
         </button>
       </div>
     </div>

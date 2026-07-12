@@ -201,5 +201,5 @@ function dayKey(date, tzOffsetMinutes = 0) {
   return shifted.getTime();
 }
 
-export { Checkin };
+export { Checkin, dayKey };
 export default CheckinModel;

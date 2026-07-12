@@ -64,7 +64,7 @@ export default function GeneratePreview() {
       } finally {
         setIsSaving(false);
       }
-    }, 'check-in save');
+    }, 'saving your check-in');
   };
 
   const mdToRender = editMarkdown || generatedMarkdown;
@@ -140,7 +140,7 @@ export default function GeneratePreview() {
         <div className="space-y-3 mb-6">
           {!hasGeneratedOnce ? (
             <button
-              onClick={() => executeWithAuth(generateReflection, 'reflection generation')}
+              onClick={() => executeWithAuth(generateReflection, 'generating your reflection')}
               disabled={isGenerating}
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-base font-semibold transition-all active:scale-95 ${vc.btn} ${isGenerating ? 'opacity-70 cursor-wait' : ''}`}
             >
@@ -151,7 +151,7 @@ export default function GeneratePreview() {
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
                 <button
-                  onClick={() => { setJustSaved(false); executeWithAuth(generateReflection, 'reflection generation'); }}
+                  onClick={() => { setJustSaved(false); executeWithAuth(generateReflection, 'generating your reflection'); }}
                   disabled={isGenerating}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${vc.btnSec} ${isGenerating ? 'opacity-70 cursor-wait' : ''}`}
                 >
