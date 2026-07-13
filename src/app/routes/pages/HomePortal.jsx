@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../providers/ThemeProvider';
 import {
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
+import FloatingOrbs from '../../../components/common/FloatingOrbs';
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -64,6 +65,11 @@ export default function HomePortal() {
   // auto-cycles 0→1→2→0 continuously on its own) — this key forces the
   // effect below to genuinely restart the sequence every time.
   const [demoReplayKey, setDemoReplayKey] = useState(0);
+  // Brief, obvious highlight flash on the mockup card when manually
+  // triggered — the ambient auto-loop never sets this, so it's the one
+  // signal that's unmistakably tied to the click itself.
+  const [demoPulse, setDemoPulse] = useState(false);
+  const mockupRef = useRef(null);
 
   useEffect(() => {
     let timer;
@@ -82,6 +88,13 @@ export default function HomePortal() {
   const triggerMockupDemo = () => {
     setMockupStep(1); // jump straight to the animated step for instant feedback
     setDemoReplayKey((k) => k + 1);
+
+    // Scroll the mockup into view (it may be below the fold on smaller
+    // screens) and flash a ring highlight around it so the click's effect
+    // is unmistakable, not just "the same thing that was already looping."
+    mockupRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setDemoPulse(true);
+    setTimeout(() => setDemoPulse(false), 900);
   };
 
   return (
@@ -92,8 +105,16 @@ export default function HomePortal() {
       exit="exit"
       className="min-h-screen bg-[#E2DFD2] dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-600 transition-colors duration-300"
     >
+      <FloatingOrbs />
+
+      <div className="relative z-10">
       {/* Persistent Navigation */}
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200/40 dark:border-gray-800/45 bg-white/40 dark:bg-gray-950/40 backdrop-blur-lg transition-colors duration-300">
+      <motion.header
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="sticky top-0 z-50 w-full border-b border-gray-200/40 dark:border-gray-800/45 bg-white/40 dark:bg-gray-950/40 backdrop-blur-lg transition-colors duration-300"
+      >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/15 group-hover:scale-105 transition-all duration-300">
@@ -208,7 +229,7 @@ export default function HomePortal() {
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Mobile Drawer */}
       <AnimatePresence>
@@ -249,18 +270,42 @@ export default function HomePortal() {
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
 
-        <div className="md:col-span-6 space-y-6 text-left">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[11px] font-bold uppercase tracking-wide">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
+          }}
+          className="md:col-span-6 space-y-6 text-left"
+        >
+          <motion.div
+            variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[11px] font-bold uppercase tracking-wide"
+          >
             <Target className="w-3 h-3" /> Built for UN SDG 3 — Good Health & Wellbeing
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-gray-950 dark:text-white">
+          </motion.div>
+          <motion.h1
+            variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0 } }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-gray-950 dark:text-white"
+          >
             A daily check-in <br />
             for your <span className="bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-400 dark:to-purple-400 gradient-text">mental wellbeing</span>
-          </h1>
-          <p className="text-gray-700 dark:text-gray-400 text-base sm:text-lg leading-relaxed max-w-lg">
+          </motion.h1>
+          <motion.p
+            variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0 } }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="text-gray-700 dark:text-gray-400 text-base sm:text-lg leading-relaxed max-w-lg"
+          >
             Log your mood, energy, and sleep in under a minute. Get a warm, AI-written reflection grounded in your own words — never diagnostic, always supportive.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 pt-2">
+          </motion.p>
+          <motion.div
+            variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0 } }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="flex flex-col sm:flex-row gap-4 pt-2"
+          >
             <Link
               to="/check-in"
               className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
@@ -273,12 +318,20 @@ export default function HomePortal() {
             >
               <Play className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" /> Watch Demo
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Hero Right - Interactive Mockup */}
-        <div className="md:col-span-6">
-          <div className="relative rounded-2xl border border-gray-200 dark:border-gray-800/80 bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-colors duration-300">
+        <motion.div
+          ref={mockupRef}
+          initial={{ opacity: 0, x: 24, scale: 0.97 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+          className="md:col-span-6"
+        >
+          <div className={`relative rounded-2xl border bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-all duration-500 ${
+            demoPulse ? 'border-indigo-400 dark:border-indigo-400 ring-4 ring-indigo-400/30 shadow-indigo-500/20' : 'border-gray-200 dark:border-gray-800/80'
+          }`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-[#F6F8FA] dark:bg-[#161B22] transition-colors duration-300">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-red-400 dark:bg-red-500/60" />
@@ -367,7 +420,7 @@ export default function HomePortal() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Features */}
@@ -564,6 +617,7 @@ export default function HomePortal() {
           </div>
         </div>
       </footer>
+      </div>
     </motion.div>
   );
 }
