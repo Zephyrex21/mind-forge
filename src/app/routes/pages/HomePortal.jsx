@@ -9,6 +9,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
 import FloatingOrbs from '../../../components/common/FloatingOrbs';
+import FloatWrapper from '../../../components/common/FloatWrapper';
+import BlinkingCursor from '../../../components/common/BlinkingCursor';
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -329,6 +331,7 @@ export default function HomePortal() {
           transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
           className="md:col-span-6"
         >
+          <FloatWrapper distance={8} duration={4.5}>
           <div className={`relative rounded-2xl border bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-all duration-500 ${
             demoPulse ? 'border-indigo-400 dark:border-indigo-400 ring-4 ring-indigo-400/30 shadow-indigo-500/20' : 'border-gray-200 dark:border-gray-800/80'
           }`}>
@@ -353,14 +356,16 @@ export default function HomePortal() {
                       <div className="text-gray-700 dark:text-gray-400 flex items-center gap-2">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
                       </div>
-                      <div className="text-gray-500 dark:text-gray-500">Ready to reflect. Click "Watch Demo" to replay.</div>
+                      <div className="text-gray-500 dark:text-gray-500 flex items-center">
+                        Ready to reflect. Click "Watch Demo" to replay.<BlinkingCursor />
+                      </div>
                     </motion.div>
                   )}
 
                   {mockupStep === 1 && (
                     <motion.div key="step-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
                       <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 animate-pulse font-bold">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Reflecting on today's check-in...
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Reflecting on today's check-in...<BlinkingCursor />
                       </div>
                       <div className="space-y-1.5 pl-4 text-gray-600 dark:text-gray-500">
                         <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted</div>
@@ -420,6 +425,7 @@ export default function HomePortal() {
               </div>
             </div>
           </div>
+          </FloatWrapper>
         </motion.div>
       </section>
 
@@ -508,7 +514,10 @@ export default function HomePortal() {
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/40 p-4 max-w-5xl mx-auto overflow-hidden shadow-xl transition-colors duration-300">
+          className="max-w-5xl mx-auto"
+        >
+        <FloatWrapper distance={9} duration={5}>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/40 p-4 overflow-hidden shadow-xl transition-colors duration-300">
           <div className="flex items-center gap-1.5 pb-3 border-b border-gray-200 dark:border-gray-800 px-2">
             <span className="w-3 h-3 rounded-full bg-red-400 dark:bg-red-500/60" />
             <span className="w-3 h-3 rounded-full bg-yellow-400 dark:bg-yellow-500/60" />
@@ -556,6 +565,8 @@ export default function HomePortal() {
               </div>
             </div>
           </div>
+        </div>
+        </FloatWrapper>
         </motion.div>
       </section>
 
