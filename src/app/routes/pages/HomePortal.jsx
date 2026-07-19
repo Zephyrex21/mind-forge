@@ -206,6 +206,34 @@ export default function HomePortal() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
 
+  // Scroll-aware navbar: intensifies its background/blur once the page has
+  // scrolled past the hero, and tracks which section is currently in view
+  // so the nav link can highlight itself (scroll-spy).
+  const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  useEffect(() => {
+    const ids = ['features', 'how-it-works', 'faq'];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { rootMargin: '-45% 0px -50% 0px', threshold: 0 }
+    );
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
   // Interactive mockup state machine — auto-cycles 0→1→2→3→0 continuously.
   const [mockupStep, setMockupStep] = useState(0);
   const mockupRef = useRef(null);
@@ -268,7 +296,11 @@ export default function HomePortal() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="sticky top-0 z-50 w-full border-b border-gray-200/40 dark:border-gray-800/45 bg-white/40 dark:bg-gray-950/40 backdrop-blur-lg transition-colors duration-300"
+        className={`sticky top-0 z-50 w-full border-b backdrop-blur-lg transition-all duration-300 ${
+          scrolled
+            ? 'border-gray-200/70 dark:border-gray-800/70 bg-white/80 dark:bg-gray-950/80 shadow-sm'
+            : 'border-gray-200/40 dark:border-gray-800/45 bg-white/40 dark:bg-gray-950/40'
+        }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 group">
@@ -281,9 +313,28 @@ export default function HomePortal() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600 dark:text-gray-400">
-            <a href="#features" className="hover:text-black dark:hover:text-white transition-colors duration-200">Features</a>
-            <a href="#how-it-works" className="hover:text-black dark:hover:text-white transition-colors duration-200">How it Works</a>
-            <a href="#faq" className="hover:text-black dark:hover:text-white transition-colors duration-200">FAQ</a>
+            {[
+              { id: 'features', label: 'Features' },
+              { id: 'how-it-works', label: 'How it Works' },
+              { id: 'faq', label: 'FAQ' },
+            ].map((link) => (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                className={`relative pb-1 transition-colors duration-200 ${
+                  activeSection === link.id ? 'text-black dark:text-white' : 'hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {link.label}
+                {activeSection === link.id && (
+                  <motion.span
+                    layoutId="navActiveUnderline"
+                    className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-indigo-500 rounded-full"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+              </a>
+            ))}
             <a
               href="https://github.com/Zephyrex21/mind-forge"
               target="_blank"
@@ -665,22 +716,40 @@ export default function HomePortal() {
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</h2>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+            className="h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 origin-left"
+          />
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Built to be quick, honest, and genuinely supportive.</p>
         </motion.div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map(({ icon: Icon, title, desc }, i) => (
             <motion.div
               key={title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial="hidden"
+              whileInView="visible"
+              whileHover="hover"
               viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
-              whileHover={{ y: -4 }}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.45, delay: (i % 3) * 0.08 } },
+                hover: { y: -4 },
+              }}
               className="group p-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 text-left space-y-3 hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300"
             >
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500 group-hover:scale-110 transition-all duration-300">
+              <motion.div
+                variants={{
+                  hidden: { scale: 0, rotate: -20 },
+                  visible: { scale: 1, rotate: 0, transition: { type: 'spring', stiffness: 260, damping: 14, delay: (i % 3) * 0.08 + 0.15 } },
+                  hover: { scale: 1.1 },
+                }}
+                className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500 transition-colors duration-300"
+              >
                 <Icon className="w-5 h-5 text-indigo-500 group-hover:text-white transition-colors duration-300" />
-              </div>
+              </motion.div>
               <h3 className="font-bold text-sm text-gray-950 dark:text-white">{title}</h3>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
             </motion.div>
@@ -698,11 +767,25 @@ export default function HomePortal() {
           className="max-w-2xl mx-auto mb-16 space-y-4"
         >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</h2>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+            className="h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 origin-left"
+          />
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Three steps, every day, in under two minutes.</p>
         </motion.div>
         <div className="relative grid sm:grid-cols-3 gap-10">
-          {/* Connecting line behind the numbered circles, signaling a sequence */}
-          <div className="hidden sm:block absolute top-6 left-[16.5%] right-[16.5%] h-px bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-500/30 to-transparent" />
+          {/* Connecting line behind the numbered circles — draws itself in
+              left-to-right, then each circle "lights up" as it's reached */}
+          <motion.div
+            className="hidden sm:block absolute top-6 left-[16.5%] right-[16.5%] h-px bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-500/30 to-transparent origin-left"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          />
           {HOW_IT_WORKS.map((item, i) => (
             <motion.div
               key={item.step}
@@ -712,8 +795,17 @@ export default function HomePortal() {
               transition={{ duration: 0.45, delay: i * 0.15 }}
               className="relative flex flex-col items-center text-center space-y-4"
             >
-              <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900 border-2 border-indigo-200 dark:border-indigo-500/30 text-sm font-bold text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-sm transition-colors duration-300">
-                {item.step}
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <motion.span
+                  className="absolute inset-0 rounded-full border-2 border-indigo-400 dark:border-indigo-400"
+                  initial={{ scale: 1, opacity: 0 }}
+                  whileInView={{ scale: [1, 1.6], opacity: [0.7, 0] }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.8, delay: 0.3 + i * 0.5, ease: 'easeOut' }}
+                />
+                <div className="relative z-10 w-12 h-12 rounded-full bg-white dark:bg-gray-900 border-2 border-indigo-200 dark:border-indigo-500/30 text-sm font-bold text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-sm transition-colors duration-300">
+                  {item.step}
+                </div>
               </div>
               <h3 className="text-base font-bold text-gray-950 dark:text-white pt-1">{item.title}</h3>
               <p className="text-gray-700 dark:text-gray-400 text-xs leading-relaxed max-w-[200px]">{item.desc}</p>
@@ -732,6 +824,13 @@ export default function HomePortal() {
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</h2>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+            className="h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 origin-left"
+          />
           <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">Mood trends, streaks, and achievements — all computed from your own check-ins.</p>
         </motion.div>
 
@@ -873,6 +972,13 @@ export default function HomePortal() {
           className="text-center mb-16 space-y-4"
         >
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</h2>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+            className="h-1 w-14 mx-auto rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 origin-left"
+          />
           <p className="text-gray-600 dark:text-gray-400 text-base">Everything you need to know about using MindForge.</p>
         </motion.div>
 
@@ -884,14 +990,25 @@ export default function HomePortal() {
                 className="w-full px-6 py-5 flex items-center justify-between text-left font-semibold text-sm sm:text-base text-gray-950 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
               >
                 <span>{faq.q}</span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-500 transition-transform duration-200 ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                <motion.span
+                  animate={{ rotate: activeFaq === idx ? 180 : 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                  className="flex-shrink-0"
+                >
+                  <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-500" />
+                </motion.span>
               </button>
               <AnimatePresence initial={false}>
                 {activeFaq === idx && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                    <div className="px-6 pb-6 text-xs sm:text-sm text-gray-700 dark:text-gray-400 leading-relaxed border-t border-gray-200 dark:border-gray-900 pt-4">
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+                    <motion.div
+                      initial={{ y: -6, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.25, delay: 0.05 }}
+                      className="px-6 pb-6 text-xs sm:text-sm text-gray-700 dark:text-gray-400 leading-relaxed border-t border-gray-200 dark:border-gray-900 pt-4"
+                    >
                       {faq.a}
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -901,26 +1018,38 @@ export default function HomePortal() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-colors duration-300">
+      <motion.footer
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.5 }}
+        className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-colors duration-300"
+      >
         <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
+          <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-700 flex items-center justify-center">
               <HeartPulse className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-sm tracking-tight text-gray-950 dark:text-white">
               Mind<span className="text-indigo-700 dark:text-indigo-400">Forge</span>
             </span>
-          </div>
+          </motion.div>
 
           <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Not a substitute for professional mental health care
+            <motion.span
+              animate={{ scale: [1, 1.15, 1] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+              className="inline-flex"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            </motion.span> Not a substitute for professional mental health care
           </div>
 
           <div className="text-right text-[11px] text-gray-500 dark:text-gray-400">
             <div>© {new Date().getFullYear()} MindForge. Built for UN SDG 3.</div>
           </div>
         </div>
-      </footer>
+      </motion.footer>
       </div>
     </motion.div>
   );
