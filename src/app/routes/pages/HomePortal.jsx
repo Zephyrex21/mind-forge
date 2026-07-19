@@ -52,6 +52,44 @@ const FAQS = [
   },
 ];
 
+/**
+ * A number that counts up from 0 to its target the first time it scrolls
+ * into view — turns a static stat into something that reads as freshly
+ * computed rather than a hardcoded screenshot value. Respects
+ * prefers-reduced-motion by snapping straight to the target.
+ */
+function AnimatedStat({ target, decimals = 0, suffix = '' }) {
+  const [value, setValue] = useState(0);
+  const started = useRef(false);
+
+  const handleEnter = () => {
+    if (started.current) return;
+    started.current = true;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      setValue(target);
+      return;
+    }
+
+    const duration = 1100;
+    const start = performance.now();
+    const step = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(target * eased);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  return (
+    <motion.span onViewportEnter={handleEnter} viewport={{ once: true, margin: '-40px' }}>
+      {value.toFixed(decimals)}{suffix}
+    </motion.span>
+  );
+}
+
 export default function HomePortal() {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout, openLoginModal } = useAuth();
@@ -63,6 +101,12 @@ export default function HomePortal() {
   // Interactive mockup state machine — auto-cycles 0→1→2→3→0 continuously.
   const [mockupStep, setMockupStep] = useState(0);
   const mockupRef = useRef(null);
+
+  // Shared variants for the hero terminal's "log lines appearing one by
+  // one" effect — makes the mockup read as live technical output rather
+  // than a static screenshot.
+  const logStagger = { hidden: {}, visible: { transition: { staggerChildren: 0.16 } } };
+  const logLine = { hidden: { opacity: 0, y: 4 }, visible: { opacity: 1, y: 0 } };
 
   useEffect(() => {
     let timer;
@@ -343,57 +387,82 @@ export default function HomePortal() {
               <div className="flex-1">
                 <AnimatePresence mode="wait">
                   {mockupStep === 0 && (
-                    <motion.div key="step-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 text-left">
-                      <div className="text-gray-700 dark:text-gray-400 flex items-center gap-2">
-                        <span className="text-indigo-600 dark:text-indigo-400">$</span> mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
-                      </div>
-                      <div className="text-gray-500 dark:text-gray-500 flex items-center">
+                    <motion.div key="step-0" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-2 text-left">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        <span className="text-indigo-600 dark:text-indigo-400">$</span> mind-forge check-in --start
+                      </motion.div>
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                        <Check className="w-3 h-3 text-green-500" /> session authenticated · jwt verified
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-700 dark:text-gray-400 pt-1">
+                        mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-500 flex items-center">
                         Ready to reflect.<BlinkingCursor />
-                      </div>
+                      </motion.div>
                     </motion.div>
                   )}
 
                   {mockupStep === 1 && (
-                    <motion.div key="step-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
-                      <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 animate-pulse font-bold">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Reflecting on today's check-in...<BlinkingCursor />
-                      </div>
-                      <div className="space-y-1.5 pl-4 text-gray-600 dark:text-gray-500">
-                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted</div>
-                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Coping tools reviewed</div>
-                        <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed</div>
-                      </div>
+                    <motion.div key="step-1" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        <span className="text-indigo-600 dark:text-indigo-400">$</span> POST /api/checkins <span className="text-green-500">202 Accepted</span>
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" /> Reflecting on today's check-in...
+                      </motion.div>
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                        <Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted
+                      </motion.div>
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                        <Check className="w-3.5 h-3.5 text-green-500" /> Coping tools reviewed
+                      </motion.div>
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                        <Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 pt-1">
+                        → model: gemini-2.5-flash · context: 7-day history
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 flex items-center">
+                        → generating reflection<BlinkingCursor />
+                      </motion.div>
                     </motion.div>
                   )}
 
                   {mockupStep === 2 && (
-                    <motion.div key="step-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
-                      <div className="text-indigo-500 font-bold">## Today's Reflection</div>
-                      <div className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <motion.div key="step-2" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-2 text-left">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        <span className="text-indigo-600 dark:text-indigo-400">$</span> 200 OK · 214 tokens · 1.8s
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-indigo-500 font-bold pt-1">## Today's Reflection</motion.div>
+                      <motion.div variants={logLine} className="text-gray-600 dark:text-gray-400 leading-relaxed">
                         It sounds like today asked a lot of you on not much sleep. Noticing that and still showing up for your check-in is worth acknowledging...
-                      </div>
+                      </motion.div>
                     </motion.div>
                   )}
 
                   {mockupStep === 3 && (
-                    <motion.div key="step-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 text-left">
-                      <div className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold">
+                    <motion.div key="step-3" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        <span className="text-indigo-600 dark:text-indigo-400">$</span> PATCH /api/dashboard <span className="text-green-500">200 OK</span>
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
                         <LayoutDashboard className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Saved to your dashboard
-                      </div>
-                      <div className="flex items-center gap-4 pt-1">
+                      </motion.div>
+                      <motion.div variants={logLine} className="flex items-center gap-4 pt-1">
                         <div className="flex items-center gap-1.5 text-orange-500 font-bold">
                           <Flame className="w-4 h-4" /> 7-day streak
                         </div>
                         <div className="text-gray-500 dark:text-gray-500">·</div>
                         <div className="text-gray-600 dark:text-gray-400">avg mood 3.6/5</div>
-                      </div>
+                      </motion.div>
                       <div className="flex items-end gap-1 h-10 pt-1">
                         {[40, 65, 50, 80, 60, 90, 70].map((h, i) => (
                           <motion.div
                             key={i}
                             initial={{ height: 0 }}
                             animate={{ height: `${h}%` }}
-                            transition={{ delay: i * 0.06, duration: 0.4, ease: 'easeOut' }}
+                            transition={{ delay: 0.4 + i * 0.06, duration: 0.4, ease: 'easeOut' }}
                             className="w-3 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400"
                           />
                         ))}
@@ -522,12 +591,39 @@ export default function HomePortal() {
                 <h4 className="text-sm font-bold text-gray-900 dark:text-white">Built entirely on your data</h4>
               </div>
               <div className="space-y-4">
-                <div className="p-3.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs space-y-1">
-                  <div className="font-semibold text-gray-950 dark:text-white">Mood & Energy Trend</div>
+                <div className="p-3.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-gray-950 dark:text-white">Mood & Energy Trend</div>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                    </span>
+                  </div>
                   <div className="text-gray-600 dark:text-gray-400">Computed from your own saved check-ins — no external APIs.</div>
+                  <div className="flex items-end gap-1 h-6 pt-1">
+                    {[35, 55, 45, 65, 50, 75, 60].map((h, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        whileInView={{ height: `${h}%` }}
+                        viewport={{ once: true, margin: '-40px' }}
+                        transition={{ delay: i * 0.07, duration: 0.5, ease: 'easeOut' }}
+                        className="w-2 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400"
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div className="p-3.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs space-y-1">
-                  <div className="font-semibold text-gray-950 dark:text-white">Streaks & Achievements</div>
+                  <div className="font-semibold text-gray-950 dark:text-white flex items-center gap-1.5">
+                    <motion.span
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                      className="inline-flex"
+                    >
+                      <Flame className="w-3.5 h-3.5 text-orange-500" />
+                    </motion.span>
+                    Streaks & Achievements
+                  </div>
                   <div className="text-gray-600 dark:text-gray-400">A gentle nudge to keep showing up for yourself.</div>
                 </div>
               </div>
@@ -536,22 +632,54 @@ export default function HomePortal() {
             <div className="md:col-span-8 p-6 flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 transition-colors duration-300">
               <div className="w-full max-w-md p-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl space-y-4 font-sans text-left transition-colors duration-300">
                 <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-800 pb-2">
-                  <span className="text-xs font-bold text-gray-900 dark:text-white">Your progress</span>
-                  <span className="text-[10px] text-orange-500 flex items-center gap-1"><Flame className="w-3 h-3" /> 7-day streak</span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                    </span>
+                    Your progress
+                  </span>
+                  <span className="text-[10px] text-orange-500 flex items-center gap-1">
+                    <motion.span
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                      className="inline-flex"
+                    >
+                      <Flame className="w-3 h-3" />
+                    </motion.span> 7-day streak
+                  </span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Avg mood (30d):</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">3.6 / 5</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      <AnimatedStat target={3.6} decimals={1} suffix=" / 5" />
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Avg sleep (30d):</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">6.8h</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      <AnimatedStat target={6.8} decimals={1} suffix="h" />
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Total check-ins:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">42</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      <AnimatedStat target={42} decimals={0} />
+                    </span>
                   </div>
+                </div>
+                <div className="flex items-end gap-1.5 h-12 pt-1 border-t border-gray-100 dark:border-gray-800">
+                  {[40, 65, 50, 80, 60, 90, 70].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ height: 0 }}
+                      whileInView={{ height: `${h}%` }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ delay: 0.15 + i * 0.07, duration: 0.5, ease: 'easeOut' }}
+                      className="w-3 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400 mt-2"
+                    />
+                  ))}
                 </div>
               </div>
             </div>
