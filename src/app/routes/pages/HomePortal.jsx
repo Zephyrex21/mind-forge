@@ -60,11 +60,10 @@ const FAQS = [
  */
 function AnimatedStat({ target, decimals = 0, suffix = '' }) {
   const [value, setValue] = useState(0);
-  const started = useRef(false);
+  const rafId = useRef(null);
 
   const handleEnter = () => {
-    if (started.current) return;
-    started.current = true;
+    if (rafId.current) cancelAnimationFrame(rafId.current);
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reducedMotion) {
@@ -72,19 +71,20 @@ function AnimatedStat({ target, decimals = 0, suffix = '' }) {
       return;
     }
 
+    setValue(0);
     const duration = 1100;
     const start = performance.now();
     const step = (now) => {
       const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(target * eased);
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) rafId.current = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    rafId.current = requestAnimationFrame(step);
   };
 
   return (
-    <motion.span onViewportEnter={handleEnter} viewport={{ once: true, margin: '-40px' }}>
+    <motion.span onViewportEnter={handleEnter} viewport={{ once: false, margin: '-40px' }}>
       {value.toFixed(decimals)}{suffix}
     </motion.span>
   );
@@ -160,7 +160,7 @@ function AnimatedLineChart({ points, height = 90 }) {
         fill="url(#moodLineGradient)"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: '-40px' }}
+        viewport={{ once: false, margin: '-40px' }}
         transition={{ duration: 0.7, delay: 0.5 }}
       />
       <motion.path
@@ -172,7 +172,7 @@ function AnimatedLineChart({ points, height = 90 }) {
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         whileInView={{ pathLength: 1 }}
-        viewport={{ once: true, margin: '-40px' }}
+        viewport={{ once: false, margin: '-40px' }}
         transition={{ duration: 1.3, ease: 'easeOut' }}
       />
       <motion.circle
@@ -182,7 +182,7 @@ function AnimatedLineChart({ points, height = 90 }) {
         fill="currentColor"
         initial={{ opacity: 0, scale: 0 }}
         whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true, margin: '-40px' }}
+        viewport={{ once: false, margin: '-40px' }}
         transition={{ delay: 1.3, duration: 0.3 }}
       />
       <motion.circle
@@ -738,7 +738,7 @@ export default function HomePortal() {
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: false, margin: '-60px' }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
           className="max-w-5xl mx-auto"
         >
