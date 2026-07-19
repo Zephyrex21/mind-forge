@@ -4,7 +4,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import {
   ArrowRight, Github, Sun, Moon, Menu, X, HeartPulse,
   Flame, Sparkles, Check, ChevronDown, Smile,
-  ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users, LogIn,
+  ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users, LogIn, TrendingUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
@@ -132,6 +132,71 @@ const DASHBOARD_INSIGHTS = [
   'Longest streak yet: 7 days',
   'Evenings are your most reflective time',
 ];
+
+/**
+ * A small line chart that draws itself in (stroke + gradient fill) the
+ * first time it scrolls into view, with a soft pulsing dot at the latest
+ * point — reads as a live-updating graph rather than a flat screenshot.
+ * Color is inherited via `currentColor`, so wrap in a text-color class.
+ */
+function AnimatedLineChart({ points, height = 90 }) {
+  const width = 320;
+  const stepX = width / (points.length - 1);
+  const coords = points.map((p, i) => [i * stepX, height - (p / 100) * height]);
+  const linePath = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
+  const [lastX, lastY] = coords[coords.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="moodLineGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <motion.path
+        d={areaPath}
+        fill="url(#moodLineGradient)"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.7, delay: 0.5 }}
+      />
+      <motion.path
+        d={linePath}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        whileInView={{ pathLength: 1 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 1.3, ease: 'easeOut' }}
+      />
+      <motion.circle
+        cx={lastX}
+        cy={lastY}
+        r="4"
+        fill="currentColor"
+        initial={{ opacity: 0, scale: 0 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ delay: 1.3, duration: 0.3 }}
+      />
+      <motion.circle
+        cx={lastX}
+        cy={lastY}
+        r="4"
+        fill="currentColor"
+        initial={{ opacity: 0.5, scale: 1 }}
+        animate={{ opacity: 0, scale: 2.4 }}
+        transition={{ delay: 1.6, duration: 1.4, repeat: Infinity, ease: 'easeOut' }}
+      />
+    </svg>
+  );
+}
 
 export default function HomePortal() {
   const { isDark, toggleTheme } = useTheme();
@@ -701,19 +766,10 @@ export default function HomePortal() {
                     </span>
                   </div>
                   <div className="text-gray-600 dark:text-gray-400">Computed from your own saved check-ins — no external APIs.</div>
-                  <div className="flex items-end gap-1 h-6 pt-1">
-                    {[35, 55, 45, 65, 50, 75, 60].map((h, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ height: 0 }}
-                        whileInView={{ height: `${h}%` }}
-                        viewport={{ once: true, margin: '-40px' }}
-                        transition={{ delay: i * 0.07, duration: 0.5, ease: 'easeOut' }}
-                        className="w-2 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400"
-                      />
-                    ))}
+                  <div className="h-10 text-indigo-500 dark:text-indigo-400">
+                    <AnimatedLineChart points={[35, 55, 45, 65, 50, 75, 60]} height={40} />
                   </div>
-                  <div className="pt-1.5 border-t border-gray-200 dark:border-gray-800 h-4 overflow-hidden">
+                  <div className="pt-1.5 mt-1 border-t border-gray-200 dark:border-gray-800 relative h-[18px]">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={insightIndex}
@@ -721,9 +777,10 @@ export default function HomePortal() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.4 }}
-                        className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-medium"
+                        className="absolute inset-x-0 top-1.5 flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-medium whitespace-nowrap"
                       >
-                        <Sparkles className="w-2.5 h-2.5 flex-shrink-0" /> {DASHBOARD_INSIGHTS[insightIndex]}
+                        <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
+                        <span className="truncate text-[11px]">{DASHBOARD_INSIGHTS[insightIndex]}</span>
                       </motion.div>
                     </AnimatePresence>
                   </div>
@@ -768,14 +825,24 @@ export default function HomePortal() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Avg mood (30d):</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      <AnimatedStat target={3.6} decimals={1} suffix=" / 5" />
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        <AnimatedStat target={3.6} decimals={1} suffix=" / 5" />
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-green-500 font-semibold">
+                        <TrendingUp className="w-2.5 h-2.5" /> 8%
+                      </span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Avg sleep (30d):</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      <AnimatedStat target={6.8} decimals={1} suffix="h" />
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        <AnimatedStat target={6.8} decimals={1} suffix="h" />
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-green-500 font-semibold">
+                        <TrendingUp className="w-2.5 h-2.5" /> 4%
+                      </span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
@@ -785,17 +852,8 @@ export default function HomePortal() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-end gap-1.5 h-12 pt-1 border-t border-gray-100 dark:border-gray-800">
-                  {[40, 65, 50, 80, 60, 90, 70].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${h}%` }}
-                      viewport={{ once: true, margin: '-40px' }}
-                      transition={{ delay: 0.15 + i * 0.07, duration: 0.5, ease: 'easeOut' }}
-                      className="w-3 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400 mt-2"
-                    />
-                  ))}
+                <div className="h-16 pt-1 border-t border-gray-100 dark:border-gray-800 text-indigo-500 dark:text-indigo-400">
+                  <AnimatedLineChart points={[40, 65, 50, 80, 60, 90, 70]} height={64} />
                 </div>
               </div>
             </div>
