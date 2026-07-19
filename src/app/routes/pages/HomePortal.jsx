@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../providers/ThemeProvider';
 import {
   ArrowRight, Github, Sun, Moon, Menu, X, HeartPulse,
-  Flame, Sparkles, Check, ChevronDown, Smile, Play,
-  ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users,
+  Flame, Sparkles, Check, ChevronDown, Smile,
+  ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users, LogIn,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
@@ -60,17 +60,8 @@ export default function HomePortal() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
 
-  // Interactive mockup state machine
+  // Interactive mockup state machine — auto-cycles 0→1→2→3→0 continuously.
   const [mockupStep, setMockupStep] = useState(0);
-  // Bumped on every "View Demo" click. setMockupStep(0) alone is a no-op
-  // in React when mockupStep is already 0 (the common case, since the demo
-  // auto-cycles 0→1→2→0 continuously on its own) — this key forces the
-  // effect below to genuinely restart the sequence every time.
-  const [demoReplayKey, setDemoReplayKey] = useState(0);
-  // Brief, obvious highlight flash on the mockup card when manually
-  // triggered — the ambient auto-loop never sets this, so it's the one
-  // signal that's unmistakably tied to the click itself.
-  const [demoPulse, setDemoPulse] = useState(false);
   const mockupRef = useRef(null);
 
   useEffect(() => {
@@ -85,19 +76,7 @@ export default function HomePortal() {
       timer = setTimeout(() => setMockupStep(0), 3600);
     }
     return () => clearTimeout(timer);
-  }, [mockupStep, demoReplayKey]);
-
-  const triggerMockupDemo = () => {
-    setMockupStep(1); // jump straight to the animated step for instant feedback
-    setDemoReplayKey((k) => k + 1);
-
-    // Scroll the mockup into view (it may be below the fold on smaller
-    // screens) and flash a ring highlight around it so the click's effect
-    // is unmistakable, not just "the same thing that was already looping."
-    mockupRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setDemoPulse(true);
-    setTimeout(() => setDemoPulse(false), 900);
-  };
+  }, [mockupStep]);
 
   return (
     <motion.div
@@ -315,10 +294,24 @@ export default function HomePortal() {
               Start Check-in <ArrowRight className="w-4 h-4" />
             </Link>
             <button
-              onClick={triggerMockupDemo}
+              onClick={() => {
+                if (user) {
+                  navigate('/dashboard');
+                } else {
+                  openLoginModal(() => navigate('/dashboard'));
+                }
+              }}
               className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200 active:scale-[0.98]"
             >
-              <Play className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" /> Watch Demo
+              {user ? (
+                <>
+                  <LayoutDashboard className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /> Dashboard
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /> Sign In
+                </>
+              )}
             </button>
           </motion.div>
         </motion.div>
@@ -332,9 +325,7 @@ export default function HomePortal() {
           className="md:col-span-6"
         >
           <FloatWrapper distance={8} duration={4.5}>
-          <div className={`relative rounded-2xl border bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-all duration-500 ${
-            demoPulse ? 'border-indigo-400 dark:border-indigo-400 ring-4 ring-indigo-400/30 shadow-indigo-500/20' : 'border-gray-200 dark:border-gray-800/80'
-          }`}>
+          <div className="relative rounded-2xl border border-gray-200 dark:border-gray-800/80 bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-all duration-500">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-[#F6F8FA] dark:bg-[#161B22] transition-colors duration-300">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-red-400 dark:bg-red-500/60" />
@@ -357,7 +348,7 @@ export default function HomePortal() {
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
                       </div>
                       <div className="text-gray-500 dark:text-gray-500 flex items-center">
-                        Ready to reflect. Click "Watch Demo" to replay.<BlinkingCursor />
+                        Ready to reflect.<BlinkingCursor />
                       </div>
                     </motion.div>
                   )}
