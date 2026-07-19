@@ -90,6 +90,49 @@ function AnimatedStat({ target, decimals = 0, suffix = '' }) {
   );
 }
 
+/**
+ * Types text out character by character with a trailing blinking cursor —
+ * used for the AI reflection text so it reads as being generated live
+ * rather than pasted in whole. Re-runs whenever `text` changes (i.e. when
+ * the parent step re-mounts it). Respects prefers-reduced-motion.
+ */
+function TypewriterText({ text, speed = 16, className = '' }) {
+  const [displayed, setDisplayed] = useState('');
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      setDisplayed(text);
+      return;
+    }
+    setDisplayed('');
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(interval);
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  const done = displayed.length >= text.length;
+  return (
+    <span className={className}>
+      {displayed}
+      {!done && <BlinkingCursor />}
+    </span>
+  );
+}
+
+// Rotating one-line insights for the dashboard preview terminal — cycles on
+// its own so that panel doesn't just sit there bobbing with dead text.
+const DASHBOARD_INSIGHTS = [
+  'Mood trending upward this week',
+  'Sleep improved 12% vs last month',
+  'Longest streak yet: 7 days',
+  'Evenings are your most reflective time',
+];
+
 export default function HomePortal() {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout, openLoginModal } = useAuth();
@@ -102,6 +145,27 @@ export default function HomePortal() {
   const [mockupStep, setMockupStep] = useState(0);
   const mockupRef = useRef(null);
 
+  // A fresh "session start" time, regenerated every time the demo loops back
+  // to step 0 — gives each command line a real, ticking timestamp instead of
+  // a timestamp frozen at page load.
+  const [demoStartTime, setDemoStartTime] = useState(() => new Date());
+  const logTime = (offsetSeconds = 0) =>
+    new Date(demoStartTime.getTime() + offsetSeconds * 1000).toLocaleTimeString([], { hour12: false });
+
+  // Live-ticking "synced Xs ago" counter for the dashboard preview terminal.
+  const [syncedSecondsAgo, setSyncedSecondsAgo] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSyncedSecondsAgo((s) => (s + 1) % 60), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Rotating insight line for the same panel.
+  const [insightIndex, setInsightIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setInsightIndex((i) => (i + 1) % DASHBOARD_INSIGHTS.length), 3200);
+    return () => clearInterval(id);
+  }, []);
+
   // Shared variants for the hero terminal's "log lines appearing one by
   // one" effect — makes the mockup read as live technical output rather
   // than a static screenshot.
@@ -111,11 +175,12 @@ export default function HomePortal() {
   useEffect(() => {
     let timer;
     if (mockupStep === 0) {
-      timer = setTimeout(() => setMockupStep(1), 1800);
+      setDemoStartTime(new Date());
+      timer = setTimeout(() => setMockupStep(1), 2000);
     } else if (mockupStep === 1) {
-      timer = setTimeout(() => setMockupStep(2), 1800);
+      timer = setTimeout(() => setMockupStep(2), 2400);
     } else if (mockupStep === 2) {
-      timer = setTimeout(() => setMockupStep(3), 3200);
+      timer = setTimeout(() => setMockupStep(3), 3800);
     } else if (mockupStep === 3) {
       timer = setTimeout(() => setMockupStep(0), 3600);
     }
@@ -383,16 +448,25 @@ export default function HomePortal() {
               <div className="w-12" />
             </div>
 
-            <div className="p-6 min-h-[300px] flex flex-col font-mono text-xs select-none bg-white dark:bg-[#0D1117] transition-colors duration-300">
+            <div className="p-6 min-h-[360px] flex flex-col font-mono text-xs select-none bg-white dark:bg-[#0D1117] transition-colors duration-300">
               <div className="flex-1">
                 <AnimatePresence mode="wait">
                   {mockupStep === 0 && (
-                    <motion.div key="step-0" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-2 text-left">
+                    <motion.div key="step-0" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                        [{logTime(0)}] session start
+                      </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> mind-forge check-in --start
                       </motion.div>
                       <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
                         <Check className="w-3 h-3 text-green-500" /> session authenticated · jwt verified
+                      </motion.div>
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                        <Check className="w-3 h-3 text-green-500" /> db connection: mongodb atlas (14ms)
+                      </motion.div>
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                        <Check className="w-3 h-3 text-green-500" /> streak cache warm · 7-day window loaded
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-700 dark:text-gray-400 pt-1">
                         mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
@@ -405,8 +479,14 @@ export default function HomePortal() {
 
                   {mockupStep === 1 && (
                     <motion.div key="step-1" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                        [{logTime(2)}] request received
+                      </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> POST /api/checkins <span className="text-green-500">202 Accepted</span>
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        → validating payload... <span className="text-green-500">ok</span>
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
                         <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" /> Reflecting on today's check-in...
@@ -420,8 +500,14 @@ export default function HomePortal() {
                       <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
                         <Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed
                       </motion.div>
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                        <Check className="w-3.5 h-3.5 text-green-500" /> Crisis-language scan: clear
+                      </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 pt-1">
                         → model: gemini-2.5-flash · context: 7-day history
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        → tokenizing input... 214 tokens
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 flex items-center">
                         → generating reflection<BlinkingCursor />
@@ -430,21 +516,36 @@ export default function HomePortal() {
                   )}
 
                   {mockupStep === 2 && (
-                    <motion.div key="step-2" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-2 text-left">
+                    <motion.div key="step-2" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                        [{logTime(4)}] response received
+                      </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> 200 OK · 214 tokens · 1.8s
                       </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        → caching response · scope: user:current
+                      </motion.div>
                       <motion.div variants={logLine} className="text-indigo-500 font-bold pt-1">## Today's Reflection</motion.div>
                       <motion.div variants={logLine} className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                        It sounds like today asked a lot of you on not much sleep. Noticing that and still showing up for your check-in is worth acknowledging...
+                        <TypewriterText text="It sounds like today asked a lot of you on not much sleep. Noticing that and still showing up for your check-in is worth acknowledging..." speed={14} />
                       </motion.div>
                     </motion.div>
                   )}
 
                   {mockupStep === 3 && (
                     <motion.div key="step-3" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
+                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                        [{logTime(6)}] syncing dashboard
+                      </motion.div>
                       <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> PATCH /api/dashboard <span className="text-green-500">200 OK</span>
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        → cache invalidated · per-user scope
+                      </motion.div>
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                        → recomputing streak... 7 days
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
                         <LayoutDashboard className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Saved to your dashboard
@@ -612,6 +713,20 @@ export default function HomePortal() {
                       />
                     ))}
                   </div>
+                  <div className="pt-1.5 border-t border-gray-200 dark:border-gray-800 h-4 overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={insightIndex}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.4 }}
+                        className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-medium"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 flex-shrink-0" /> {DASHBOARD_INSIGHTS[insightIndex]}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
                 </div>
                 <div className="p-3.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs space-y-1">
                   <div className="font-semibold text-gray-950 dark:text-white flex items-center gap-1.5">
@@ -638,6 +753,7 @@ export default function HomePortal() {
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
                     </span>
                     Your progress
+                    <span className="font-normal text-gray-400 dark:text-gray-600 text-[10px]">· synced {syncedSecondsAgo}s ago</span>
                   </span>
                   <span className="text-[10px] text-orange-500 flex items-center gap-1">
                     <motion.span
