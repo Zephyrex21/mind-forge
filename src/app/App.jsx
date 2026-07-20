@@ -12,6 +12,8 @@ const CheckInBuilder = lazy(() => import('./routes/pages/CheckInBuilder'));
 const Settings = lazy(() => import('./routes/pages/Settings'));
 const Dashboard = lazy(() => import('./routes/pages/Dashboard'));
 const CheckIns = lazy(() => import('./routes/pages/CheckIns'));
+const EmotionInsights = lazy(() => import('./routes/pages/EmotionInsights'));
+const Breathe = lazy(() => import('./routes/pages/Breathe'));
 const NotFound = lazy(() => import('./routes/pages/NotFound'));
 
 /**
@@ -48,6 +50,8 @@ export default function App() {
                   <Route path="/check-in/chat" element={<CheckInBuilder />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/my-checkins" element={<ProtectedRoute><CheckIns /></ProtectedRoute>} />
+                  <Route path="/insights" element={<ProtectedRoute><EmotionInsights /></ProtectedRoute>} />
+                  <Route path="/breathe" element={<Breathe />} />
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   <Route path="/not-found" element={<NotFound />} />
                   <Route path="*" element={<Navigate to="/not-found" replace />} />

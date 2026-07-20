@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { connectDb } from './db/connection.js';
 import generateRouter from './routes/generate.js';
 import checkinsRouter from './routes/checkins.js';
+import goalsRouter from './routes/goals.js';
 import userRouter from './routes/user.js';
 import authRouter from './routes/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -84,6 +85,7 @@ app.use(rateLimit({
 app.use('/api/auth', authRouter);
 app.use('/api/generate', generateRouter);
 app.use('/api/checkins', checkinsRouter);
+app.use('/api/goals', goalsRouter);
 app.use('/api/user', userRouter);
 
 // --- Error handling (must be last) ---

@@ -7,15 +7,18 @@ import {
   Flame, BookOpen, Moon, Smile, Zap, BedDouble, ChevronRight,
   Plus, ExternalLink, Settings, LayoutDashboard,
   RefreshCw, NotebookPen, Menu, X, LogOut, Mail, CalendarDays,
-  HeartHandshake, Sparkles, TrendingUp, TrendingDown, Minus,
+  HeartHandshake, Sparkles, TrendingUp, TrendingDown, Minus, BellRing, Activity, Wind,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MoodTrendChart from '../../../components/wellness/MoodTrendChart';
 import CheckinStreakRing from '../../../components/wellness/CheckinStreakRing';
 import AchievementBadges from '../../../components/wellness/AchievementBadges';
+import HabitTracker from '../../../components/wellness/HabitTracker';
 import GuestUpgradeCard from '../../../components/wellness/GuestUpgradeCard';
 import MarkdownRenderer from '../../../components/common/MarkdownRenderer';
 import { getWeeklyRecap } from '../../../utils/weeklyRecap';
+import { toLocalDateKey } from '../../../utils/goalStreak';
+import { useReminder, hasReminderTimePassed } from '../../../hooks/useReminder';
 
 function StatCard({ icon: Icon, label, value, suffix = '', isDark }) {
   return (
@@ -61,6 +64,14 @@ export default function Dashboard() {
 
   const recentCheckins = allCheckins.slice(0, 3);
   const weeklyRecap = getWeeklyRecap(allCheckins);
+
+  const { enabled: reminderEnabled, time: reminderTime } = useReminder();
+  const todayKey = toLocalDateKey();
+  const hasCheckedInToday = allCheckins.some((c) => toLocalDateKey(new Date(c.createdAt)) === todayKey);
+  const showReminderBanner = reminderEnabled && !hasCheckedInToday && hasReminderTimePassed(reminderTime);
+
+  const latestMood = allCheckins[0]?.mood;
+  const showBreathingPrompt = typeof latestMood === 'number' && latestMood <= 2;
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this check-in?')) return;
@@ -113,6 +124,22 @@ export default function Dashboard() {
             }`}
           >
             <NotebookPen className="w-4 h-4" /> My Check-ins
+          </button>
+          <button
+            onClick={() => navigate('/insights')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+              isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            <Activity className="w-4 h-4" /> Insights
+          </button>
+          <button
+            onClick={() => navigate('/breathe')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+              isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            <Wind className="w-4 h-4" /> Breathe
           </button>
           <button
             onClick={() => navigate('/settings')}
@@ -188,6 +215,12 @@ export default function Dashboard() {
             <button onClick={() => { setMobileNavOpen(false); navigate('/my-checkins'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
               <NotebookPen className="w-4 h-4" /> My Check-ins
             </button>
+            <button onClick={() => { setMobileNavOpen(false); navigate('/insights'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <Activity className="w-4 h-4" /> Insights
+            </button>
+            <button onClick={() => { setMobileNavOpen(false); navigate('/breathe'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <Wind className="w-4 h-4" /> Breathe
+            </button>
             <button onClick={() => { setMobileNavOpen(false); navigate('/settings'); }} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
               <Settings className="w-4 h-4" /> Settings
             </button>
@@ -200,6 +233,43 @@ export default function Dashboard() {
         <div className="max-w-5xl w-full mx-auto px-6 py-8 space-y-6">
           {/* Guest upgrade prompt */}
           {user.isGuest && <GuestUpgradeCard />}
+
+          {/* Daily reminder banner — only shows once the chosen reminder
+              time has passed and there's no check-in yet today */}
+          {showReminderBanner && (
+            <div className={`p-4 rounded-2xl border flex items-center gap-3 ${
+              isDark ? 'bg-indigo-500/10 border-indigo-500/25' : 'bg-indigo-50 border-indigo-200'
+            }`}>
+              <BellRing className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+              <p className="flex-1 text-xs sm:text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                You haven't checked in today yet — take a minute for yourself.
+              </p>
+              <button
+                onClick={() => navigate('/check-in')}
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+              >
+                Check in now
+              </button>
+            </div>
+          )}
+
+          {/* Contextual breathing-exercise suggestion after a low-mood check-in */}
+          {showBreathingPrompt && (
+            <div className={`p-4 rounded-2xl border flex items-center gap-3 ${
+              isDark ? 'bg-purple-500/10 border-purple-500/25' : 'bg-purple-50 border-purple-200'
+            }`}>
+              <Wind className="w-5 h-5 text-purple-500 flex-shrink-0" />
+              <p className="flex-1 text-xs sm:text-sm font-medium text-purple-700 dark:text-purple-300">
+                Your last check-in mentioned a tough day. A few minutes of guided breathing might help.
+              </p>
+              <button
+                onClick={() => navigate('/breathe')}
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white transition-colors"
+              >
+                Try it
+              </button>
+            </div>
+          )}
 
           {/* Welcome Banner */}
           <div className={`p-6 rounded-2xl border flex flex-col sm:flex-row items-center gap-5 justify-between ${
@@ -305,6 +375,9 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Habit tracker */}
+          <HabitTracker />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Most-used coping tools */}

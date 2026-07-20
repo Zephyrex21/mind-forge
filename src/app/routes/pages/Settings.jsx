@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useToast } from '../../providers/ToastProvider';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useReminder } from '../../../hooks/useReminder';
 
 // Page transitions definition
 const pageVariants = {
@@ -16,10 +17,49 @@ export default function Settings() {
   const { isDark, theme, setTheme, builderStyle, setBuilderStyle } = useTheme();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const {
+    enabled: reminderEnabled,
+    time: reminderTime,
+    permission: notificationPermission,
+    setEnabled: setReminderEnabled,
+    setTime: setReminderTime,
+    requestPermission,
+    sendTestNotification,
+  } = useReminder();
 
   const handleThemeChange = (newTheme) => {
     setTheme(newTheme);
     showToast(`Theme changed to ${newTheme}`);
+  };
+
+  const handleReminderToggle = async () => {
+    if (!reminderEnabled) {
+      if (notificationPermission === 'unsupported') {
+        showToast('Your browser doesn\u2019t support notifications, but you\u2019ll still see a reminder banner in the app.');
+        setReminderEnabled(true);
+        return;
+      }
+      if (notificationPermission !== 'granted') {
+        const result = await requestPermission();
+        if (result !== 'granted') {
+          showToast('Notifications weren\u2019t enabled — you\u2019ll still see a reminder banner in the app instead.');
+          setReminderEnabled(true);
+          return;
+        }
+      }
+      showToast('Daily reminder enabled');
+      setReminderEnabled(true);
+    } else {
+      setReminderEnabled(false);
+      showToast('Daily reminder turned off');
+    }
+  };
+
+  const handleTestNotification = () => {
+    const sent = sendTestNotification();
+    if (!sent) {
+      showToast('Enable notifications first to send a test.');
+    }
   };
 
   return (
@@ -109,6 +149,55 @@ export default function Settings() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Daily Reminder */}
+        <div className={`p-6 rounded-2xl border space-y-4 text-left ${
+          isDark ? 'border-gray-800 bg-gray-900/40' : 'border-gray-200 bg-white shadow-sm'
+        }`}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold flex items-center gap-2">
+              {reminderEnabled ? <BellRing className="w-4 h-4 text-indigo-500" /> : <BellOff className="w-4 h-4 text-gray-500" />}
+              Daily Reminder
+            </h2>
+            <button
+              onClick={handleReminderToggle}
+              role="switch"
+              aria-checked={reminderEnabled}
+              className={`relative w-11 h-6 rounded-full transition-colors ${reminderEnabled ? 'bg-indigo-500' : isDark ? 'bg-gray-800' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${reminderEnabled ? 'translate-x-5' : ''}`} />
+            </button>
+          </div>
+
+          <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            Get a gentle nudge to check in each day. If your browser blocks notifications (or you keep this tab closed), you'll still see a reminder banner in the app whenever you haven't checked in yet.
+          </p>
+
+          {reminderEnabled && (
+            <div className="flex items-center gap-3 pt-1">
+              <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`} htmlFor="reminder-time">
+                Remind me at
+              </label>
+              <input
+                id="reminder-time"
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border outline-none ${
+                  isDark ? 'border-gray-800 bg-gray-900 text-gray-200' : 'border-gray-200 bg-gray-50 text-gray-800'
+                }`}
+              />
+              {notificationPermission === 'granted' && (
+                <button
+                  onClick={handleTestNotification}
+                  className="ml-auto text-xs font-semibold text-indigo-500 flex items-center gap-1 hover:opacity-80 transition-opacity"
+                >
+                  <Bell className="w-3.5 h-3.5" /> Send test
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Privacy / Data Details */}

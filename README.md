@@ -54,8 +54,12 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 🗓️ **Weekly recap** — a rolling 7-day summary of your mood/energy/sleep, best & toughest days, and what's helped most, right on the dashboard
 - 🔍 **Searchable check-in history** — filter past entries by keyword, mood range, or time period
 - ⬇️ **Export your data** — download your check-ins as CSV, or print/save a clean PDF copy
+- 🎯 **Habit tracker** — track small daily goals alongside your check-ins, each with its own streak
+- 🔔 **Daily reminders** — an optional nudge (browser notification + in-app banner) if you haven't checked in yet today
+- 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
+- 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 90 automated tests across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 146 automated tests across frontend and backend, enforced in CI
 
 ---
 
@@ -201,7 +205,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **90 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **146 tests total**, all enforced in CI.
 
 ```bash
 # Frontend (from project root)
@@ -232,9 +236,9 @@ The frontend build (`npm run build`) is fully static and can be deployed anywher
 ## 🗺 Roadmap
 
 - [ ] AI-powered personalized wellness recommendations
-- [ ] Habit tracking and goal management
-- [ ] Guided meditation and mindfulness exercises
-- [ ] Emotion analytics dashboard
+- [x] Habit tracking and goal management
+- [x] Guided meditation and mindfulness exercises
+- [x] Emotion analytics dashboard
 - [ ] Calendar and reminder integration
 - [ ] Multi-language support
 - [x] Export journal entries
