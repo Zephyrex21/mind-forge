@@ -113,6 +113,12 @@ export default function BreathingExercise() {
   const mm = Math.floor(secondsLeft / 60);
   const ss = String(secondsLeft % 60).padStart(2, '0');
 
+  // True while a session is paused partway through — changing the pattern
+  // or duration here would silently reset that progress, so the controls
+  // stay disabled until the person resets or finishes.
+  const sessionInProgress = !isComplete && secondsLeft < totalSeconds;
+  const settingsLocked = isRunning || sessionInProgress;
+
   return (
     <div className="flex flex-col items-center text-center">
       {/* Pattern picker */}
@@ -120,7 +126,7 @@ export default function BreathingExercise() {
         {Object.entries(BREATHING_PATTERNS).map(([key, p]) => (
           <button
             key={key}
-            disabled={isRunning}
+            disabled={settingsLocked}
             onClick={() => setPatternKey(key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
               patternKey === key
@@ -160,7 +166,7 @@ export default function BreathingExercise() {
         {DURATION_OPTIONS.map((mins) => (
           <button
             key={mins}
-            disabled={isRunning}
+            disabled={settingsLocked}
             onClick={() => setDurationMinutes(mins)}
             className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
               durationMinutes === mins

@@ -29,7 +29,7 @@ const CSV_COLUMNS = [
  * or line break would silently corrupt the column structure. */
 function escapeCsvField(value) {
   const str = value === null || value === undefined ? '' : String(value);
-  if (/[",\n]/.test(str)) {
+  if (/[",\r\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;

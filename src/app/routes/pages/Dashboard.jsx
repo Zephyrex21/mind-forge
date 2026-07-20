@@ -70,8 +70,9 @@ export default function Dashboard() {
   const hasCheckedInToday = allCheckins.some((c) => toLocalDateKey(new Date(c.createdAt)) === todayKey);
   const showReminderBanner = reminderEnabled && !hasCheckedInToday && hasReminderTimePassed(reminderTime);
 
-  const latestMood = allCheckins[0]?.mood;
-  const showBreathingPrompt = typeof latestMood === 'number' && latestMood <= 2;
+  const latestCheckin = allCheckins[0];
+  const latestCheckinIsRecent = latestCheckin && Date.now() - new Date(latestCheckin.createdAt).getTime() < 2 * 24 * 60 * 60 * 1000;
+  const showBreathingPrompt = latestCheckinIsRecent && typeof latestCheckin.mood === 'number' && latestCheckin.mood <= 2;
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this check-in?')) return;

@@ -241,3 +241,26 @@ body {
 .github-dark .github-markdown-body table tr:nth-child(2n) {
   background-color: #161b22;
 }
+
+/*
+ * Print override for exported pages (e.g. My Check-ins' "Print / Save as
+ * PDF"). Tailwind's `dark:` classes are driven by a `.dark` class on
+ * <html> that has nothing to do with print — if the app happens to be in
+ * dark mode when the person prints, `dark:text-white`, `dark:bg-gray-950`,
+ * etc. stay active and would otherwise print near-invisible light text on
+ * a white page. `!important` here is a deliberate, narrow exception: this
+ * is a legibility fix for a specific rendered-for-print subtree, not a
+ * general specificity shortcut.
+ */
+@media print {
+  .print\:block,
+  .print\:block * {
+    color: #111827 !important;
+    background: transparent !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+  }
+  .print\:block a {
+    color: #1d4ed8 !important;
+  }
+}

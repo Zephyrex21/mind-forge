@@ -73,6 +73,7 @@ export default function HabitTracker() {
   };
 
   const handleArchive = async (goal) => {
+    if (!window.confirm(`Archive "${goal.title}"? It'll be removed from this list and its streak will stop counting.`)) return;
     try {
       await goalsApi.archive(goal._id);
       setGoals((prev) => prev.filter((g) => g._id !== goal._id));
@@ -89,13 +90,15 @@ export default function HabitTracker() {
         <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
           <Target className="w-4 h-4 text-emerald-500" /> Habit Tracker
         </h3>
-        {goals.length < MAX_GOALS_HINT && (
+        {goals.length < MAX_GOALS_HINT ? (
           <button
             onClick={() => setAdding((p) => !p)}
             className="text-xs font-semibold text-indigo-500 flex items-center gap-1 hover:opacity-80 transition-opacity"
           >
             <Plus className="w-3.5 h-3.5" /> Add Goal
           </button>
+        ) : (
+          <span className={`text-xs ${vc.textSec}`}>Limit reached ({MAX_GOALS_HINT})</span>
         )}
       </div>
 
