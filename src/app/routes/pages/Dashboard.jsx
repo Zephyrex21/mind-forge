@@ -7,7 +7,7 @@ import {
   Flame, BookOpen, Moon, Smile, Zap, BedDouble, ChevronRight,
   Plus, ExternalLink, Settings, LayoutDashboard,
   RefreshCw, NotebookPen, Menu, X, LogOut, Mail, CalendarDays,
-  HeartHandshake, Sparkles,
+  HeartHandshake, Sparkles, TrendingUp, TrendingDown, Minus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MoodTrendChart from '../../../components/wellness/MoodTrendChart';
@@ -15,6 +15,7 @@ import CheckinStreakRing from '../../../components/wellness/CheckinStreakRing';
 import AchievementBadges from '../../../components/wellness/AchievementBadges';
 import GuestUpgradeCard from '../../../components/wellness/GuestUpgradeCard';
 import MarkdownRenderer from '../../../components/common/MarkdownRenderer';
+import { getWeeklyRecap } from '../../../utils/weeklyRecap';
 
 function StatCard({ icon: Icon, label, value, suffix = '', isDark }) {
   return (
@@ -35,7 +36,7 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
-  const [recentCheckins, setRecentCheckins] = useState([]);
+  const [allCheckins, setAllCheckins] = useState([]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function Dashboard() {
           checkinsApi.list().catch(() => []),
         ]);
         setStats(statsData);
-        setRecentCheckins(checkinsData.slice(0, 3));
+        setAllCheckins(checkinsData);
       } catch (err) {
         showToast(err.message || 'Error loading dashboard');
       } finally {
@@ -58,13 +59,16 @@ export default function Dashboard() {
     if (user) loadDashboardData();
   }, [user, showToast]);
 
+  const recentCheckins = allCheckins.slice(0, 3);
+  const weeklyRecap = getWeeklyRecap(allCheckins);
+
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this check-in?')) return;
     try {
       await checkinsApi.remove(id);
       showToast('Check-in deleted');
       const data = await checkinsApi.list();
-      setRecentCheckins(data.slice(0, 3));
+      setAllCheckins(data);
     } catch (err) {
       showToast(err.message || 'Failed to delete check-in');
     }
@@ -234,6 +238,72 @@ export default function Dashboard() {
           <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4">Mood & Energy Trend</h3>
             <MoodTrendChart trend={stats?.trend || []} />
+          </div>
+
+          {/* Weekly recap */}
+          <div className={`p-5 rounded-2xl border ${isDark ? 'bg-gray-900/30 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-indigo-500" /> Your Week in Review
+            </h3>
+
+            {!weeklyRecap.hasData ? (
+              <p className={`text-xs ${vc.textSec}`}>No check-ins in the last 7 days yet — log one to see your weekly recap here.</p>
+            ) : (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Check-ins</div>
+                    <div className="text-xl font-black font-mono">{weeklyRecap.count}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Mood</div>
+                    <div className="text-xl font-black font-mono flex items-center gap-1.5">
+                      {weeklyRecap.avgMood ?? '—'}
+                      {weeklyRecap.moodDelta != null && weeklyRecap.moodDelta !== 0 && (
+                        <span className={`text-xs font-bold flex items-center ${weeklyRecap.moodDelta > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {weeklyRecap.moodDelta > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                          {Math.abs(weeklyRecap.moodDelta)}
+                        </span>
+                      )}
+                      {weeklyRecap.moodDelta === 0 && <Minus className="w-3.5 h-3.5 text-gray-400" />}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Energy</div>
+                    <div className="text-xl font-black font-mono">{weeklyRecap.avgEnergy ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Sleep</div>
+                    <div className="text-xl font-black font-mono">{weeklyRecap.avgSleep != null ? `${weeklyRecap.avgSleep}h` : '—'}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {weeklyRecap.bestDay && (
+                    <div className={`px-3 py-2.5 rounded-xl border flex items-center justify-between ${isDark ? 'border-gray-800 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                      <span className={vc.textSec}>Best day</span>
+                      <span className="font-semibold">
+                        {new Date(weeklyRecap.bestDay.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Mood {weeklyRecap.bestDay.mood}/5
+                      </span>
+                    </div>
+                  )}
+                  {weeklyRecap.toughestDay && (
+                    <div className={`px-3 py-2.5 rounded-xl border flex items-center justify-between ${isDark ? 'border-gray-800 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                      <span className={vc.textSec}>Toughest day</span>
+                      <span className="font-semibold">
+                        {new Date(weeklyRecap.toughestDay.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Mood {weeklyRecap.toughestDay.mood}/5
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {weeklyRecap.topCopingTool && (
+                  <p className={`text-xs ${vc.textSec}`}>
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">{weeklyRecap.topCopingTool.tool}</span> helped you the most this week ({weeklyRecap.topCopingTool.count}×).
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

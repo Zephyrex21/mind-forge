@@ -51,8 +51,11 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 🧯 **Safety-first by design** — crisis-language screening surfaces real crisis resources even if the AI call fails
 - ⚡ **Smart AI infrastructure** — per-user response caching, automatic model fallback chains, and retry handling for a flaky upstream API
 - 📊 **Personal dashboard** — mood & energy trends, streaks, and check-in history, computed entirely from your own data
+- 🗓️ **Weekly recap** — a rolling 7-day summary of your mood/energy/sleep, best & toughest days, and what's helped most, right on the dashboard
+- 🔍 **Searchable check-in history** — filter past entries by keyword, mood range, or time period
+- ⬇️ **Export your data** — download your check-ins as CSV, or print/save a clean PDF copy
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 82 automated tests across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 90 automated tests across frontend and backend, enforced in CI
 
 ---
 
@@ -198,7 +201,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **82 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **90 tests total**, all enforced in CI.
 
 ```bash
 # Frontend (from project root)
@@ -234,7 +237,7 @@ The frontend build (`npm run build`) is fully static and can be deployed anywher
 - [ ] Emotion analytics dashboard
 - [ ] Calendar and reminder integration
 - [ ] Multi-language support
-- [ ] Export journal entries
+- [x] Export journal entries
 - [ ] Progressive Web App (PWA) support
 
 ---
