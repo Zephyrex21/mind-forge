@@ -67,12 +67,56 @@ checkinSchema.index({ userId: 1, createdAt: -1 });
 const Checkin = mongoose.models.Checkin || model('Checkin', checkinSchema);
 
 export const CheckinModel = {
-  async getUserCheckins(userId, { limit = 100 } = {}) {
-    return Checkin.find({ userId }).sort({ createdAt: -1 }).limit(limit);
+  /**
+   * Cursor-based pagination (not skip/limit) — skip/limit gets slower the
+   * deeper a user pages in, since MongoDB still has to walk past every
+   * skipped document. The cursor is the `createdAt` of the last item on
+   * the previous page; combined with the existing `{userId:1,createdAt:-1}`
+   * index, every page is an equally fast indexed range query regardless
+   * of how far back it is.
+   *
+   * Fetches `limit + 1` documents to detect whether another page exists
+   * without a separate (and, on a large collection, non-trivial) count
+   * query — a classic pagination trick: if the (limit+1)th document came
+   * back, there's more; trim it off before returning.
+   */
+  async getUserCheckins(userId, { limit = 30, cursor } = {}) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 30, 1), 100);
+    const query = { userId };
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      if (!Number.isNaN(cursorDate.getTime())) {
+        query.createdAt = { $lt: cursorDate };
+      }
+    }
+
+    const docs = await Checkin.find(query).sort({ createdAt: -1 }).limit(safeLimit + 1);
+    const hasMore = docs.length > safeLimit;
+    const items = hasMore ? docs.slice(0, safeLimit) : docs;
+    const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
+
+    return { items, nextCursor };
   },
 
   async getCheckinById(id, userId) {
     return Checkin.findOne({ _id: id, userId });
+  },
+
+  /**
+   * Returns the user's *entire* check-in history, but only the handful of
+   * fields needed for dashboard aggregation (weekly recap, day-of-week/
+   * sleep-mood analytics, "checked in today?" checks) — not the free-text
+   * fields (gratitude, goals, milestones, custom notes, the AI reflection
+   * itself). Those analyses genuinely need the full history to be
+   * accurate (a "day-of-week pattern" computed from only the most recent
+   * page would quietly be wrong), but have no reason to pull potentially
+   * long reflection text over the wire just to compute an average.
+   */
+  async getAllForAnalytics(userId) {
+    return Checkin.find({ userId })
+      .select('mood energy sleepHours copingTools createdAt isFavorite')
+      .sort({ createdAt: -1 })
+      .lean();
   },
 
   async createCheckin(userId, data) {

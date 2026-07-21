@@ -26,7 +26,7 @@ export default function EmotionInsights() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await checkinsApi.list();
+        const data = await checkinsApi.analytics();
         setCheckins(data);
       } catch (err) {
         showToast(err.message || 'Failed to load check-ins');

@@ -1,3 +1,5 @@
+import { reportError } from '../services/errorReporter.js';
+
 /**
  * Global error handler middleware.
  */
@@ -23,6 +25,13 @@ export function errorHandler(err, req, res, next) {
   const status = err.status || 500;
   const isDev = process.env.NODE_ENV === 'development';
   const message = status === 500 && !isDev ? 'Internal server error' : err.message;
+
+  // Only genuinely unexpected failures (5xx) go to the error reporter —
+  // a 400/401/404 is expected, routine traffic (a bad request, an expired
+  // session, a missing record), not something worth alerting on.
+  if (status >= 500 && process.env.NODE_ENV !== 'test') {
+    reportError(err, { requestId: req.id, method: req.method, path: req.path, userId: req.user?.id });
+  }
 
   res.status(status).json({
     error: message,

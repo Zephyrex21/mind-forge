@@ -48,7 +48,7 @@ export default function Dashboard() {
         setLoading(true);
         const [statsData, checkinsData] = await Promise.all([
           checkinsApi.stats().catch(() => null),
-          checkinsApi.list().catch(() => []),
+          checkinsApi.analytics().catch(() => []),
         ]);
         setStats(statsData);
         setAllCheckins(checkinsData);
@@ -79,7 +79,7 @@ export default function Dashboard() {
     try {
       await checkinsApi.remove(id);
       showToast('Check-in deleted');
-      const data = await checkinsApi.list();
+      const data = await checkinsApi.analytics();
       setAllCheckins(data);
     } catch (err) {
       showToast(err.message || 'Failed to delete check-in');

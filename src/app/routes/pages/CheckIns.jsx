@@ -62,7 +62,9 @@ export default function CheckIns() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [checkins, setCheckins] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [search, setSearch] = useState('');
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [moodFilter, setMoodFilter] = useState('all');
@@ -71,11 +73,12 @@ export default function CheckIns() {
   const [expanded, setExpanded] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
 
-  const loadCheckins = useCallback(async () => {
+  const loadFirstPage = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await checkinsApi.list();
-      setCheckins(data);
+      const { items, nextCursor: cursor } = await checkinsApi.list();
+      setCheckins(items);
+      setNextCursor(cursor);
     } catch (err) {
       showToast(err.message || 'Failed to load check-ins');
     } finally {
@@ -83,9 +86,23 @@ export default function CheckIns() {
     }
   }, [showToast]);
 
+  const handleLoadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const { items, nextCursor: cursor } = await checkinsApi.list({ cursor: nextCursor });
+      setCheckins((prev) => [...prev, ...items]);
+      setNextCursor(cursor);
+    } catch (err) {
+      showToast(err.message || 'Failed to load more check-ins');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
-    if (user) loadCheckins();
-  }, [user, loadCheckins]);
+    if (user) loadFirstPage();
+  }, [user, loadFirstPage]);
 
   const filtered = useMemo(() => {
     const searchLower = search.toLowerCase().trim();
@@ -103,8 +120,11 @@ export default function CheckIns() {
 
   const handleFavorite = async (id) => {
     try {
-      await checkinsApi.toggleFavorite(id);
-      loadCheckins();
+      const updated = await checkinsApi.toggleFavorite(id);
+      // Updated in place rather than reloading from page 1 — a full
+      // reload would silently discard any pages the person had already
+      // loaded via "Load More".
+      setCheckins((prev) => prev.map((c) => (c._id === id ? updated : c)));
     } catch (err) {
       showToast(err.message || 'Failed to update favorite status');
     }
@@ -114,7 +134,7 @@ export default function CheckIns() {
     if (!window.confirm('Delete this check-in? This action is permanent.')) return;
     try {
       await checkinsApi.remove(id);
-      loadCheckins();
+      setCheckins((prev) => prev.filter((c) => c._id !== id));
       showToast('Check-in deleted');
     } catch (err) {
       showToast(err.message || 'Failed to delete check-in');
@@ -125,6 +145,9 @@ export default function CheckIns() {
     if (!filtered.length) {
       showToast('No check-ins to export with the current filters.');
       return;
+    }
+    if (nextCursor) {
+      showToast('Exporting only what\u2019s loaded so far — click "Load More" first for your complete history.');
     }
     exportCheckinsToCsv(filtered);
     setExportOpen(false);
@@ -274,7 +297,8 @@ export default function CheckIns() {
         </div>
 
         <p className={`text-[11px] ${vc.textSec}`}>
-          Showing {filtered.length} of {checkins.length} check-in{checkins.length === 1 ? '' : 's'}
+          Showing {filtered.length} of {checkins.length} loaded check-in{checkins.length === 1 ? '' : 's'}
+          {nextCursor && ' — load more below to search further back in your history'}
         </p>
 
         <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'space-y-3'}`}>
@@ -329,6 +353,21 @@ export default function CheckIns() {
             </div>
           )}
         </div>
+
+        {nextCursor && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className={`px-5 py-2.5 rounded-xl text-xs font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                isDark ? 'border-gray-800 bg-gray-900 hover:text-white text-gray-400' : 'border-gray-200 bg-white hover:text-gray-950 text-gray-600 shadow-sm'
+              }`}
+            >
+              {loadingMore && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Print-only view — hidden on screen, shown only in the print/PDF
@@ -338,6 +377,7 @@ export default function CheckIns() {
         <h1 className="text-xl font-bold mb-1">MindForge — My Check-ins</h1>
         <p className="text-xs text-gray-600 mb-6">
           Exported {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · {filtered.length} entr{filtered.length === 1 ? 'y' : 'ies'}
+          {nextCursor && ' · more history was available but not loaded before exporting'}
         </p>
         {filtered.map(c => (
           <div key={c._id} className="mb-6 break-inside-avoid">

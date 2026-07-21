@@ -8,12 +8,33 @@ const router = Router();
 router.use(requireAuth);
 
 /**
- * GET /api/checkins
- * List the authenticated user's saved check-ins, newest first.
+ * GET /api/checkins?limit=<1-100>&cursor=<ISO timestamp>
+ * Cursor-paginated list of the authenticated user's saved check-ins,
+ * newest first — full-fidelity records (title, reflection text, etc.),
+ * intended for the "My Check-ins" browsing/search/export page. `cursor`
+ * is the `nextCursor` returned by the previous page; omit it for the
+ * first page.
  */
 router.get('/', async (req, res, next) => {
   try {
-    const checkins = await CheckinModel.getUserCheckins(req.user.id);
+    const { limit, cursor } = req.query;
+    const result = await CheckinModel.getUserCheckins(req.user.id, { limit, cursor });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/checkins/analytics
+ * The user's entire check-in history, but stripped to only the fields
+ * dashboard/insights aggregation needs (see Checkin.js's
+ * getAllForAnalytics for why this is deliberately not paginated the same
+ * way — those computations need the full history to be accurate).
+ */
+router.get('/analytics', async (req, res, next) => {
+  try {
+    const checkins = await CheckinModel.getAllForAnalytics(req.user.id);
     res.json(checkins);
   } catch (err) {
     next(err);
@@ -40,6 +61,9 @@ router.get('/stats', async (req, res, next) => {
 
 /**
  * GET /api/checkins/:id
+ * NOTE: must stay below the /analytics and /stats routes above — Express
+ * matches routes in registration order, and :id would otherwise swallow
+ * "analytics"/"stats" as if they were a check-in's ID.
  */
 router.get('/:id', async (req, res, next) => {
   try {

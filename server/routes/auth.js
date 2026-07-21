@@ -9,12 +9,16 @@ const router = Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Modest rate limit on auth endpoints to slow down credential-stuffing/guessing.
+// Skipped in the test environment for the same reason as the global limiter
+// in app.js — integration tests fire many auth requests in quick succession
+// against one in-process app instance.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts. Please try again in a few minutes.' },
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 /**

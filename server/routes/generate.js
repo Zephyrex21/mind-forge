@@ -22,6 +22,7 @@ const generateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Generation rate limit reached. Please wait a moment.' },
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 /**

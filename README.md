@@ -59,7 +59,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
 - 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 157 automated tests across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 208 automated tests (unit + integration) across frontend and backend, enforced in CI
 
 ---
 
@@ -205,7 +205,11 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **157 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **208 tests total**, all enforced in CI.
+
+The backend suite has two layers:
+- **Unit tests** — pure functions in isolation (streak math, validation, prompt building, retry/backoff logic).
+- **Integration tests** (`*.integration.test.js`) — the real Express app via `supertest`, with real middleware, real cookie-based JWT auth, and real request validation. The persistence layer (Mongoose models) is swapped for an in-memory fake at the boundary rather than a real MongoDB — this proves the HTTP/auth/validation wiring is correct without depending on `mongodb-memory-server`'s binary download working in every environment (including sandboxed CI runners with restricted network egress).
 
 ```bash
 # Frontend (from project root)
@@ -219,6 +223,27 @@ npm run lint
 ```
 
 CI runs both automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml) — lint, test, and build for the frontend; lint and test for the backend.
+
+---
+
+## 🏭 Production Readiness
+
+An honest account of what's actually covered versus what's a known trade-off — the kind of thing worth knowing before relying on this in production, not just at hackathon-demo scale.
+
+**In place:**
+- Tiered rate limiting: a global per-IP limiter, a stricter brute-force limiter on auth endpoints, and a per-user (not per-IP) limiter on the AI generation endpoint with a smart client-ID fallback for anonymous traffic
+- httpOnly, environment-aware cookies (`SameSite=None; Secure` on HTTPS, `Lax` locally — derived from the actual request, not a config flag that's easy to leave wrong)
+- Helmet security headers, strict CORS origin checking, JSON body size limits
+- Structured request logging with a request ID on every response (`X-Request-Id`), so a single request can be traced through logs even across the AI pipeline's retries/fallbacks
+- A dedicated error-reporting seam (`services/errorReporter.js`) that every unexpected 5xx flows through — currently structured logging, with a clearly marked integration point for a real APM tool (Sentry, etc.) rather than a faked one
+- Integration tests covering auth, check-ins, and goals end-to-end at the HTTP layer
+- Cursor-based pagination on check-ins (not skip/limit, which gets slower the deeper a user pages in) — the browsing/export page loads 30 at a time with "Load More," while dashboard/insights aggregation uses a separate lightweight endpoint that returns the full history but only the handful of numeric fields those computations actually need, not every reflection's full text
+
+**Known trade-offs (not yet done):**
+- No real APM/error-tracking service wired up (the seam exists; no DSN configured)
+- Two animation libraries ship on the frontend (Framer Motion + GSAP) — some overlapping capability, real bundle-size cost
+- No accessibility audit has been run (ad hoc `aria-label`s added as features were built, not a systematic WCAG pass)
+- Daily reminders are client-side only (localStorage + best-effort browser Notification) — no service worker, so no true background push
 
 ---
 
