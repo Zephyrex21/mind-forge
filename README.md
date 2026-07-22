@@ -72,7 +72,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 | **Database**        | MongoDB, Mongoose                                |
 | **Authentication**  | JWT (httpOnly cookies)                          |
 | **AI**              | Google Gemini API                               |
-| **Testing**         | Vitest                                          |
+| **Testing**         | Vitest, Supertest (backend integration tests)   |
 | **Linting**         | ESLint (flat config)                            |
 | **CI/CD**           | GitHub Actions                                  |
 | **Deployment**      | Vercel (frontend) · Railway (backend)           |
@@ -85,12 +85,13 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 Client (React + Vite)
         │
         ▼
-  Express API
+  Express API  ── requestLogger (request ID + structured logs)
         │
         ├── Authentication (JWT, httpOnly cookies)
         ├── User Management
-        ├── Mood Check-ins
-        ├── Journal Management
+        ├── Mood Check-ins (cursor-paginated + a separate lightweight
+        │                    analytics endpoint for dashboard aggregation)
+        ├── Goals / Habit Tracking
         │
         ├── AI Conversation Engine
         │     ├── Prompt Optimizer
@@ -99,6 +100,7 @@ Client (React + Vite)
         │     └── Retry Handler
         │
         ├── Safety Layer (crisis-language screening)
+        ├── errorReporter (every unexpected 5xx flows through here)
         │
         └── Google Gemini API
 ```
@@ -111,27 +113,33 @@ mind-forge/
 ├── src/                      # Frontend (React + Vite)
 │   ├── app/
 │   │   ├── providers/         # Theme & app-level context providers
-│   │   └── routes/            # Page-level route components
+│   │   └── routes/            # Page-level route components (Dashboard, CheckIns,
+│   │                             EmotionInsights, Breathe, Settings, HomePortal...)
 │   ├── components/
-│   │   ├── common/            # Shared UI (orbs, cursor glow, float wrapper...)
+│   │   ├── common/            # Shared UI (orbs, cursor glow, form fields, float wrapper...)
 │   │   ├── conversation/      # Conversational check-in UI
 │   │   ├── editor/            # Journal/entry editing UI
-│   │   └── wellness/          # Mood, energy, sleep widgets
+│   │   └── wellness/          # Mood/energy widgets, habit tracker, breathing exercise, charts
 │   ├── features/
-│   │   ├── auth/              # Auth context & provider
+│   │   ├── auth/              # Auth context, provider & login modal
 │   │   └── generator/         # Guided check-in step flow
-│   ├── hooks/                 # Custom React hooks
-│   ├── services/              # API client layer
+│   ├── hooks/                 # Custom React hooks (auth, reminders, generator flow)
+│   ├── services/              # API client layer (checkins, goals, auth...)
 │   ├── constants/
-│   └── utils/
+│   └── utils/                 # Pure logic: streaks, weekly recap, emotion analytics,
+│                                 breathing-pattern math, CSV export
 │
 ├── server/                   # Backend (Node.js + Express)
-│   ├── routes/                 # Express route handlers
-│   ├── models/                 # Mongoose schemas
-│   ├── middleware/             # Auth, error handling, etc.
+│   ├── app.js                  # Express app factory (importable, DB-free — what
+│   │                             integration tests boot against)
+│   ├── index.js                 # Bootstrap: env validation, DB connect, app.listen()
+│   ├── routes/                 # Express route handlers + their integration tests
+│   ├── models/                  # Mongoose schemas (User, Checkin, Goal)
+│   ├── middleware/              # Auth, error handling, request logging
 │   ├── services/
-│   │   ├── ai/                  # Prompt optimizer, model router, cache, retry
-│   │   └── safety/               # Crisis-language screening
+│   │   ├── ai/                   # Prompt optimizer, model router, cache, retry
+│   │   ├── safety/               # Crisis-language screening
+│   │   └── errorReporter.js      # Central 5xx reporting seam (Sentry-ready)
 │   ├── db/                     # DB connection & reset scripts
 │   └── utils/
 │
@@ -231,6 +239,7 @@ CI runs both automatically on every push/PR via [GitHub Actions](.github/workflo
 An honest account of what's actually covered versus what's a known trade-off — the kind of thing worth knowing before relying on this in production, not just at hackathon-demo scale.
 
 **In place:**
+- A `GET /api/health` endpoint, registered before rate limiting/CORS so an uptime monitor or the host's own health checks don't eat into real users' rate-limit quota
 - Tiered rate limiting: a global per-IP limiter, a stricter brute-force limiter on auth endpoints, and a per-user (not per-IP) limiter on the AI generation endpoint with a smart client-ID fallback for anonymous traffic
 - httpOnly, environment-aware cookies (`SameSite=None; Secure` on HTTPS, `Lax` locally — derived from the actual request, not a config flag that's easy to leave wrong)
 - Helmet security headers, strict CORS origin checking, JSON body size limits
@@ -281,7 +290,8 @@ The frontend build (`npm run build`) is fully static and can be deployed anywher
 - [x] Habit tracking and goal management
 - [x] Guided meditation and mindfulness exercises
 - [x] Emotion analytics dashboard
-- [ ] Calendar and reminder integration
+- [x] Daily reminders (client-side; see [Production Readiness](#-production-readiness) for what a full push-notification version would need)
+- [ ] Calendar integration
 - [ ] Multi-language support
 - [x] Export journal entries
 - [ ] Progressive Web App (PWA) support
