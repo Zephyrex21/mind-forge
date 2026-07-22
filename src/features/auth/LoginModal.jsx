@@ -11,11 +11,47 @@ export default function LoginModal({ onClose, onLogin, onRegister, onGuest, desc
   const [guestLoading, setGuestLoading] = useState(false);
 
   useEffect(() => {
+    const previouslyFocused = document.activeElement;
+
+    // Move focus into the dialog on open — otherwise a keyboard/screen
+    // reader user's focus silently stays on whatever was behind it.
+    modalRef.current?.focus();
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      // Trap Tab/Shift+Tab within the dialog — without this, tabbing past
+      // the last field moves focus to the page behind the modal, which is
+      // both disorienting and a WCAG dialog-pattern violation.
+      if (e.key !== 'Tab' || !modalRef.current) return;
+
+      const focusables = modalRef.current.querySelectorAll(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      // Return focus to whatever triggered the modal (e.g. the "Sign In"
+      // button) rather than leaving it on a now-removed element.
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
   }, [onClose]);
 
   const handleEmailSubmit = async ({ email, password, displayName }) => {
@@ -44,7 +80,8 @@ export default function LoginModal({ onClose, onLogin, onRegister, onGuest, desc
     >
       <div
         ref={modalRef}
-        className={`max-w-md w-full rounded-2xl border p-6 shadow-2xl animate-fade-in relative flex flex-col items-center text-center ${
+        tabIndex={-1}
+        className={`max-w-md w-full rounded-2xl border p-6 shadow-2xl animate-fade-in relative flex flex-col items-center text-center outline-none ${
           isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
         }`}
       >

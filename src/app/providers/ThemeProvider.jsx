@@ -11,7 +11,7 @@ function getVibeClasses(vibe, isDark) {
         bg: 'bg-[#E2DFD2]',
         surface: 'bg-white border border-gray-200 shadow-sm',
         text: 'text-gray-900',
-        textSec: 'text-gray-500',
+        textSec: 'text-gray-600',
         input: 'bg-white border border-gray-300 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
         btn: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold',
         btnSec: 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',

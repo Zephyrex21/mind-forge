@@ -361,6 +361,13 @@ export default function HomePortal() {
       <FloatingOrbs />
       <CursorGlow />
 
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-xl focus:bg-indigo-600 focus:text-white focus:text-sm focus:font-semibold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <div className="relative z-10">
       {/* Persistent Navigation */}
       <motion.header
@@ -429,7 +436,7 @@ export default function HomePortal() {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1.5 focus:outline-none"
+                  className="flex items-center gap-1.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
                   aria-label="User menu"
                 >
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-center text-indigo-400 font-bold text-xs">
@@ -543,7 +550,7 @@ export default function HomePortal() {
       </AnimatePresence>
 
       {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28 grid md:grid-cols-12 gap-12 items-center">
+      <section id="main-content" className="relative max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28 grid md:grid-cols-12 gap-12 items-center">
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
 
@@ -654,25 +661,25 @@ export default function HomePortal() {
                 <AnimatePresence mode="wait">
                   {mockupStep === 0 && (
                     <motion.div key="step-0" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
-                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         [{logTime(0)}] session start
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> mind-forge check-in --start
                       </motion.div>
-                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                         <Check className="w-3 h-3 text-green-500" /> session authenticated · jwt verified
                       </motion.div>
-                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                         <Check className="w-3 h-3 text-green-500" /> db connection: mongodb atlas (14ms)
                       </motion.div>
-                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                         <Check className="w-3 h-3 text-green-500" /> streak cache warm · 7-day window loaded
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-700 dark:text-gray-400 pt-1">
                         mood: 3/5 &nbsp; energy: 2/5 &nbsp; sleep: 5.5h
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-500 flex items-center">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400 flex items-center">
                         Ready to reflect.<BlinkingCursor />
                       </motion.div>
                     </motion.div>
@@ -680,37 +687,37 @@ export default function HomePortal() {
 
                   {mockupStep === 1 && (
                     <motion.div key="step-1" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
-                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         [{logTime(2)}] request received
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> POST /api/checkins <span className="text-green-500">202 Accepted</span>
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         → validating payload... <span className="text-green-500">ok</span>
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
                         <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" /> Reflecting on today's check-in...
                       </motion.div>
-                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                         <Check className="w-3.5 h-3.5 text-green-500" /> Mood & energy noted
                       </motion.div>
-                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                         <Check className="w-3.5 h-3.5 text-green-500" /> Coping tools reviewed
                       </motion.div>
-                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                         <Check className="w-3.5 h-3.5 text-green-500" /> Safety screen passed
                       </motion.div>
-                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-500">
+                      <motion.div variants={logLine} className="pl-4 flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                         <Check className="w-3.5 h-3.5 text-green-500" /> Crisis-language scan: clear
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 pt-1">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400 pt-1">
                         → model: gemini-2.5-flash · context: 7-day history
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         → tokenizing input... 214 tokens
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600 flex items-center">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400 flex items-center">
                         → generating reflection<BlinkingCursor />
                       </motion.div>
                     </motion.div>
@@ -718,13 +725,13 @@ export default function HomePortal() {
 
                   {mockupStep === 2 && (
                     <motion.div key="step-2" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
-                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         [{logTime(4)}] response received
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> 200 OK · 214 tokens · 1.8s
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         → caching response · scope: user:current
                       </motion.div>
                       <motion.div variants={logLine} className="text-indigo-500 font-bold pt-1">## Today's Reflection</motion.div>
@@ -736,16 +743,16 @@ export default function HomePortal() {
 
                   {mockupStep === 3 && (
                     <motion.div key="step-3" initial="hidden" animate="visible" exit={{ opacity: 0 }} variants={logStagger} className="space-y-1.5 text-left">
-                      <motion.div variants={logLine} className="text-gray-400 dark:text-gray-700">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         [{logTime(6)}] syncing dashboard
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         <span className="text-indigo-600 dark:text-indigo-400">$</span> PATCH /api/dashboard <span className="text-green-500">200 OK</span>
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         → cache invalidated · per-user scope
                       </motion.div>
-                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-600">
+                      <motion.div variants={logLine} className="text-gray-500 dark:text-gray-400">
                         → recomputing streak... 7 days
                       </motion.div>
                       <motion.div variants={logLine} className="text-gray-800 dark:text-gray-300 flex items-center gap-2 font-bold pt-1">
@@ -755,7 +762,7 @@ export default function HomePortal() {
                         <div className="flex items-center gap-1.5 text-orange-500 font-bold">
                           <Flame className="w-4 h-4" /> 7-day streak
                         </div>
-                        <div className="text-gray-500 dark:text-gray-500">·</div>
+                        <div className="text-gray-500 dark:text-gray-400">·</div>
                         <div className="text-gray-600 dark:text-gray-400">avg mood 3.6/5</div>
                       </motion.div>
                       <div className="flex items-end gap-1 h-10 pt-1">

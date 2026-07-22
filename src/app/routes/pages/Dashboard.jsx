@@ -102,6 +102,13 @@ export default function Dashboard() {
   return (
     <div className={`min-h-screen flex ${vc.bg} ${vc.text} transition-colors duration-300 font-sans text-left`}>
 
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-xl focus:bg-indigo-600 focus:text-white focus:text-sm focus:font-semibold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* SIDEBAR */}
       <aside className={`w-64 border-r shrink-0 hidden md:flex flex-col h-screen ${
         isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-gray-50/50'
@@ -184,7 +191,7 @@ export default function Dashboard() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
+      <main id="main-content" className="flex-1 flex flex-col h-screen overflow-y-auto">
         <header className={`border-b shrink-0 px-6 py-4 flex items-center justify-between sticky top-0 z-35 ${
           isDark ? 'border-gray-800 bg-gray-950/80' : 'border-gray-200 bg-white/80'
         } backdrop-blur-md`}>

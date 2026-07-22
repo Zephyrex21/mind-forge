@@ -12,7 +12,7 @@ Log your mood, energy, and sleep in under a minute — and get a warm, AI-writte
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-[Live Demo](#-live-demo) · [Features](#-features) · [Getting Started](#-getting-started) · [Architecture](#-architecture) · [Roadmap](#-roadmap)
+[Live Demo](#-live-demo) · [Features](#-features) · [Getting Started](#-getting-started) · [Architecture](#-architecture) · [Accessibility](#-accessibility) · [Roadmap](#-roadmap)
 
 </div>
 
@@ -242,8 +242,25 @@ An honest account of what's actually covered versus what's a known trade-off —
 
 **Known trade-offs (not yet done):**
 - No real APM/error-tracking service wired up (the seam exists; no DSN configured)
-- No accessibility audit has been run (ad hoc `aria-label`s added as features were built, not a systematic WCAG pass)
 - Daily reminders are client-side only (localStorage + best-effort browser Notification) — no service worker, so no true background push
+
+---
+
+## ♿ Accessibility
+
+A code-level audit (not a live screen-reader session — that's a real limitation of what's been verified here) found and fixed several genuine issues rather than just adding `aria-label`s wherever convenient:
+
+- **Keyboard focus was invisible in several places** — a handful of inputs, selects, and buttons removed the browser's default focus outline without providing a replacement, meaning a keyboard-only user tabbing through could lose track of where they were entirely. Fixed with visible focus rings everywhere this was found.
+- **The three shared form-field components** (`InputField`, `SelectField`, `TextareaField` — used across the entire check-in builder) rendered a visible `<label>` that was never actually associated with its input via `htmlFor`/`id`. A screen reader landing on any of these fields announced no name at all. Fixed with `useId()`; this one fix cascades correctly everywhere those components are used.
+- **The login/signup form had zero accessible labels** on any field — placeholder text only, which disappears once you start typing and isn't reliably announced as a label by assistive tech in the first place.
+- **A custom toggle switch had no ARIA role or state** (`role="switch"`, `aria-checked`) and its visible label wasn't programmatically connected to it.
+- **Two modal dialogs were missing real dialog behavior** — one had no focus trap (Tab could escape to the page behind it) or focus restoration on close; the other had no dialog semantics at all (no `role="dialog"`, no focus management, no way for a screen reader to know a dialog had even opened). Both fixed.
+- **Actual WCAG contrast failures**, measured (not guessed) with the real formula against the real background colors — not "close enough" eyeballing:
+  - The light theme's secondary text color was 3.62:1 against the page background (needs 4.5:1 for normal text) — darkened one shade, now 5.66:1.
+  - Several text colors inside the homepage's terminal demo were as low as **1.7–2.5:1 in dark mode** — much of it was the demo's actual readable content (not just decorative flourish), not just a subtle style choice. Corrected to 4.8–7.9:1 across the board.
+- Added a skip-to-main-content link on the homepage and dashboard (the two primary entry points).
+
+**What this audit does *not* cover:** it's a static code review, not a session with a real screen reader (NVDA/JAWS/VoiceOver) or a keyboard-only walkthrough of every page. Complex interactive widgets (the breathing exercise's animated circle, the emotion-insights charts) haven't been evaluated for how well they translate to assistive tech, and heading hierarchy/landmark structure hasn't had a dedicated pass beyond what's described above.
 
 ---
 

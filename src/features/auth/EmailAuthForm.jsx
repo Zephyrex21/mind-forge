@@ -45,6 +45,9 @@ export default function EmailAuthForm({ mode, onSubmit, disabled }) {
       {isSignup && (
         <input
           type="text"
+          id="auth-display-name"
+          name="displayName"
+          aria-label="Display name (optional)"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Display name (optional)"
@@ -53,6 +56,10 @@ export default function EmailAuthForm({ mode, onSubmit, disabled }) {
       )}
       <input
         type="email"
+        id="auth-email"
+        name="email"
+        aria-label="Email address"
+        required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
@@ -61,6 +68,10 @@ export default function EmailAuthForm({ mode, onSubmit, disabled }) {
       />
       <input
         type="password"
+        id="auth-password"
+        name="password"
+        aria-label={isSignup ? 'Password, minimum 8 characters' : 'Password'}
+        required
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder={isSignup ? 'Password (min. 8 characters)' : 'Password'}
@@ -68,7 +79,7 @@ export default function EmailAuthForm({ mode, onSubmit, disabled }) {
         className={`w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all ${fontClass} ${vc.input}`}
       />
 
-      {error && <p className="text-xs text-rose-500">{error}</p>}
+      {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
       <button
         type="submit"

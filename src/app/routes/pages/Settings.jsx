@@ -184,7 +184,7 @@ export default function Settings() {
                 type="time"
                 value={reminderTime}
                 onChange={(e) => setReminderTime(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border outline-none ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                   isDark ? 'border-gray-800 bg-gray-900 text-gray-200' : 'border-gray-200 bg-gray-50 text-gray-800'
                 }`}
               />

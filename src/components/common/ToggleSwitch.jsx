@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 
 /**
@@ -6,12 +6,16 @@ import { useTheme } from '../../app/providers/ThemeProvider';
  */
 export default function ToggleSwitch({ label, value, onChange }) {
   const { vc, isDark } = useTheme();
+  const labelId = useId();
 
   return (
     <div className="flex items-center justify-between mb-4">
-      <span className={`text-sm font-medium ${vc.text}`}>{label}</span>
+      <span id={labelId} className={`text-sm font-medium ${vc.text}`}>{label}</span>
       <button
         type="button"
+        role="switch"
+        aria-checked={value}
+        aria-labelledby={labelId}
         onClick={() => onChange(!value)}
         className={`w-12 h-6 rounded-full transition-all relative ${
           value ? 'bg-green-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'

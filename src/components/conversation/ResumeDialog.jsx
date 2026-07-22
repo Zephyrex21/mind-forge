@@ -1,26 +1,66 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { HelpCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 
 export default function ResumeDialog({ onResume, onDiscard }) {
   const { vc, isDark } = useTheme();
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    dialogRef.current?.focus();
+
+    // No Escape-to-close here, deliberately — this dialog forces an
+    // explicit choice (resume or discard unsaved progress), and Escape
+    // dismissing it silently wouldn't clearly mean either one.
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusables = dialogRef.current.querySelectorAll('button:not([disabled])');
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className={`max-w-md w-full rounded-2xl border p-6 shadow-2xl animate-fade-in ${
-        isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
-      }`}>
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resume-dialog-title"
+        aria-describedby="resume-dialog-desc"
+        className={`max-w-md w-full rounded-2xl border p-6 shadow-2xl animate-fade-in outline-none ${
+          isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+        }`}
+      >
         <div className="flex items-center gap-3.5 mb-4">
           <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
             <HelpCircle className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-base font-bold">Resume Previous Session?</h3>
+            <h3 id="resume-dialog-title" className="text-base font-bold">Resume Previous Session?</h3>
             <p className={`text-xs ${vc.textSec}`}>We found some unsaved builder progress.</p>
           </div>
         </div>
 
-        <p className={`text-xs leading-relaxed mb-6 ${vc.textSec}`}>
+        <p id="resume-dialog-desc" className={`text-xs leading-relaxed mb-6 ${vc.textSec}`}>
           You can continue right where you left off, or discard the cached history and start a fresh session from scratch.
         </p>
 

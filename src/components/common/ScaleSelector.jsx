@@ -16,6 +16,8 @@ export default function ScaleSelector({ label, value, onChange, labels }) {
             key={n}
             type="button"
             onClick={() => onChange(n)}
+            aria-pressed={value === n}
+            aria-label={`${n} - ${labels[n - 1]}`}
             className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 transition-all active:scale-95 ${
               value === n ? vc.selectedCard : `${vc.card} border-transparent hover:shadow-sm`
             }`}

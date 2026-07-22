@@ -257,7 +257,7 @@ export default function CheckIns() {
             <select
               value={moodFilter}
               onChange={e => setMoodFilter(e.target.value)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold border outline-none transition-colors ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold border outline-none transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                 isDark ? 'border-gray-800 bg-gray-900 text-gray-300' : 'border-gray-200 bg-white text-gray-700'
               }`}
             >
@@ -267,7 +267,7 @@ export default function CheckIns() {
             <select
               value={timeFilter}
               onChange={e => setTimeFilter(e.target.value)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold border outline-none transition-colors ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold border outline-none transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                 isDark ? 'border-gray-800 bg-gray-900 text-gray-300' : 'border-gray-200 bg-white text-gray-700'
               }`}
             >

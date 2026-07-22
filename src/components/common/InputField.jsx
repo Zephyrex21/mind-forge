@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { useTheme } from '../../app/providers/ThemeProvider';
 
 /**
@@ -14,18 +14,21 @@ export default function InputField({
   ...props
 }) {
   const { vc, fontClass } = useTheme();
+  const id = useId();
 
   return (
     <div className="mb-4">
-      <label className={`block text-sm font-medium mb-1.5 ${vc.text}`}>
+      <label htmlFor={id} className={`block text-sm font-medium mb-1.5 ${vc.text}`}>
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
+        required={required}
         className={`w-full px-4 py-2.5 rounded-lg transition-all outline-none ${fontClass} ${vc.input}`}
         {...props}
       />
