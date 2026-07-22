@@ -67,7 +67,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 
 | Layer              | Technologies                                   |
 | ------------------ | ----------------------------------------------- |
-| **Frontend**        | React 19, Vite, Tailwind CSS, Framer Motion, GSAP |
+| **Frontend**        | React 19, Vite, Tailwind CSS, Framer Motion |
 | **Backend**         | Node.js, Express.js                             |
 | **Database**        | MongoDB, Mongoose                                |
 | **Authentication**  | JWT (httpOnly cookies)                          |
@@ -238,10 +238,10 @@ An honest account of what's actually covered versus what's a known trade-off —
 - A dedicated error-reporting seam (`services/errorReporter.js`) that every unexpected 5xx flows through — currently structured logging, with a clearly marked integration point for a real APM tool (Sentry, etc.) rather than a faked one
 - Integration tests covering auth, check-ins, and goals end-to-end at the HTTP layer
 - Cursor-based pagination on check-ins (not skip/limit, which gets slower the deeper a user pages in) — the browsing/export page loads 30 at a time with "Load More," while dashboard/insights aggregation uses a separate lightweight endpoint that returns the full history but only the handful of numeric fields those computations actually need, not every reflection's full text
+- Single animation library — the homepage originally shipped both Framer Motion and GSAP for different effects; the GSAP-specific ones (scroll-linked parallax, scramble-text reveal) were migrated onto Framer Motion equivalents and the GSAP dependency dropped entirely, cutting that page's JS from ~173KB to ~59KB (~61KB → ~16KB gzipped)
 
 **Known trade-offs (not yet done):**
 - No real APM/error-tracking service wired up (the seam exists; no DSN configured)
-- Two animation libraries ship on the frontend (Framer Motion + GSAP) — some overlapping capability, real bundle-size cost
 - No accessibility audit has been run (ad hoc `aria-label`s added as features were built, not a systematic WCAG pass)
 - Daily reminders are client-side only (localStorage + best-effort browser Notification) — no service worker, so no true background push
 

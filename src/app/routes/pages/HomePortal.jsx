@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../providers/ThemeProvider';
 import {
@@ -6,16 +6,12 @@ import {
   Flame, Sparkles, Check, ChevronDown, Smile,
   ShieldCheck, Settings, LogOut, LayoutDashboard, LifeBuoy, Target, Users, LogIn, TrendingUp,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
 import FloatingOrbs from '../../../components/common/FloatingOrbs';
 import CursorGlow from '../../../components/common/CursorGlow';
 import FloatWrapper from '../../../components/common/FloatWrapper';
 import BlinkingCursor from '../../../components/common/BlinkingCursor';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -131,6 +127,43 @@ function TypewriterText({ text, speed = 16, className = '' }) {
 
 // Rotating one-line insights for the dashboard preview terminal — cycles on
 // its own so that panel doesn't just sit there bobbing with dead text.
+/**
+ * Scrambles a heading's text in from random glitchy characters, decoding
+ * left-to-right into the real text — a plain requestAnimationFrame tween
+ * (no GSAP needed), matching the pattern used elsewhere on this page
+ * (AnimatedStat, BreathingExercise) for imperative, DOM-ref-driven
+ * animation. Respects prefers-reduced-motion by leaving the text alone.
+ */
+function scrambleReveal(el, { duration = 900 } = {}) {
+  if (!el) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const finalText = el.textContent;
+  const scrambleChars = '!<>-_\\/[]{}—=+*^?#';
+  const length = finalText.length;
+  const start = performance.now();
+
+  const tick = (now) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - (1 - progress) ** 2; // quadratic ease-out
+    const revealCount = Math.floor(eased * length);
+
+    let out = '';
+    for (let i = 0; i < length; i += 1) {
+      out += i < revealCount || finalText[i] === ' ' ? finalText[i] : scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+    }
+    el.textContent = out;
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      el.textContent = finalText;
+    }
+  };
+
+  requestAnimationFrame(tick);
+}
+
 const DASHBOARD_INSIGHTS = [
   'Mood trending upward this week',
   'Sleep improved 12% vs last month',
@@ -239,112 +272,37 @@ export default function HomePortal() {
     return () => observer.disconnect();
   }, []);
 
-  // --- GSAP refs -------------------------------------------------------
-  const heroRootRef = useRef(null); // scopes the GSAP context to the hero section
-  const headlineRef = useRef(null);
-  const mockupParallaxRef = useRef(null); // separate wrapper so GSAP's scroll
-  // transform doesn't fight framer-motion's own transform on the entrance
-  // wrapper or FloatWrapper's floating-bob wrapper (each element should own
-  // exactly one thing writing to its `transform`).
+  // --- Scroll-linked refs ------------------------------------------------
+  const mockupParallaxRef = useRef(null); // separate wrapper so the scroll
+  // parallax transform doesn't fight framer-motion's own transform on the
+  // entrance wrapper or FloatWrapper's floating-bob wrapper (each element
+  // should own exactly one thing writing to its `transform`).
 
-  // GSAP: hero headline reveal — each line slides up out of a mask on
-  // mount, distinct from the simple fade+y used elsewhere on the page.
-  useLayoutEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const ctx = gsap.context(() => {
-      const lines = headlineRef.current?.querySelectorAll('.gsap-line');
-      if (!lines || !lines.length) return;
-      if (reducedMotion) {
-        gsap.set(lines, { yPercent: 0, opacity: 1 });
-        return;
-      }
-      gsap.fromTo(
-        lines,
-        { yPercent: 110, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 1, ease: 'power4.out', stagger: 0.15, delay: 0.5 }
-      );
-    }, heroRootRef);
-    return () => ctx.revert();
-  }, []);
+  const prefersReducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
 
-  // GSAP: the hero mockup drifts and tilts very slightly as the page
-  // scrolls past it (scroll-scrubbed, not a one-time entrance) — a subtle
+  // Each headline line slides up out of its mask — reduced-motion users
+  // just get the final state with no motion.
+  const headlineLineVariants = prefersReducedMotion
+    ? { hidden: { opacity: 1, y: '0%' }, visible: { opacity: 1, y: '0%' } }
+    : { hidden: { opacity: 0, y: '110%' }, visible: { opacity: 1, y: '0%' } };
+
+  // The hero mockup drifts and tilts very slightly as the page scrolls
+  // past it (scroll-scrubbed, not a one-time entrance) — a subtle
   // continuous parallax layered on top of its existing fade-in and bob.
-  useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion || !mockupParallaxRef.current) return;
+  // Framer Motion's useScroll already does this exact job elsewhere in the
+  // app (see FloatingOrbs.jsx), so there's no need for a second animation
+  // library just for scroll-linked values.
+  const { scrollYProgress: mockupScrollProgress } = useScroll({
+    target: mockupParallaxRef,
+    offset: ['start end', 'end start'],
+  });
+  const mockupParallaxY = useTransform(mockupScrollProgress, [0, 1], ['0%', '-6%']);
+  const mockupParallaxRotate = useTransform(mockupScrollProgress, [0, 1], [0, 1]);
 
-    const ctx = gsap.context(() => {
-      gsap.to(mockupParallaxRef.current, {
-        yPercent: -6,
-        rotateZ: 1,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: mockupParallaxRef.current,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 0.6,
-        },
-      });
-    });
-    return () => ctx.revert();
-  }, []);
-
-  // GSAP: section headings "decode" into place — scrambled characters
-  // settle into the real text left-to-right the first time each heading
-  // scrolls into view. A distinct, more playful reveal than the plain
-  // fade+underline used on the rest of the page.
   const featuresHeadingRef = useRef(null);
   const howItWorksHeadingRef = useRef(null);
   const previewHeadingRef = useRef(null);
   const faqHeadingRef = useRef(null);
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const scrambleChars = '!<>-_\\/[]{}—=+*^?#';
-
-    const scrambleIn = (el) => {
-      if (!el) return;
-      const finalText = el.textContent;
-      if (reducedMotion) return;
-
-      const length = finalText.length;
-      const progress = { value: 0 };
-      gsap.to(progress, {
-        value: 1,
-        duration: 0.9,
-        ease: 'power1.out',
-        onUpdate: () => {
-          const revealCount = Math.floor(progress.value * length);
-          let out = '';
-          for (let i = 0; i < length; i += 1) {
-            if (i < revealCount || finalText[i] === ' ') {
-              out += finalText[i];
-            } else {
-              out += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
-            }
-          }
-          el.textContent = out;
-        },
-        onComplete: () => {
-          el.textContent = finalText;
-        },
-      });
-    };
-
-    const ctx = gsap.context(() => {
-      [featuresHeadingRef, howItWorksHeadingRef, previewHeadingRef, faqHeadingRef].forEach((ref) => {
-        if (!ref.current) return;
-        ScrollTrigger.create({
-          trigger: ref.current,
-          start: 'top 85%',
-          once: true,
-          onEnter: () => scrambleIn(ref.current),
-        });
-      });
-    });
-    return () => ctx.revert();
-  }, []);
 
   // Interactive mockup state machine — auto-cycles 0→1→2→3→0 continuously.
   const [mockupStep, setMockupStep] = useState(0);
@@ -585,7 +543,7 @@ export default function HomePortal() {
       </AnimatePresence>
 
       {/* Hero Section */}
-      <section ref={heroRootRef} className="relative max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28 grid md:grid-cols-12 gap-12 items-center">
+      <section className="relative max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28 grid md:grid-cols-12 gap-12 items-center">
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
 
@@ -605,19 +563,21 @@ export default function HomePortal() {
           >
             <Target className="w-3 h-3" /> Built for UN SDG 3 — Good Health & Wellbeing
           </motion.div>
-          <h1
-            ref={headlineRef}
+          <motion.h1
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.15, delayChildren: 0.4 } } }}
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-gray-950 dark:text-white"
           >
             <span className="block overflow-hidden pb-1">
-              <span className="gsap-line inline-block">A daily check-in</span>
+              <motion.span variants={headlineLineVariants} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} className="inline-block">
+                A daily check-in
+              </motion.span>
             </span>
             <span className="block overflow-hidden pb-1">
-              <span className="gsap-line inline-block">
+              <motion.span variants={headlineLineVariants} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} className="inline-block">
                 for your <span className="bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-400 dark:to-purple-400 gradient-text">mental wellbeing</span>
-              </span>
+              </motion.span>
             </span>
-          </h1>
+          </motion.h1>
           <motion.p
             variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0 } }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
@@ -667,7 +627,13 @@ export default function HomePortal() {
           transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
           className="md:col-span-6"
         >
-          <div ref={mockupParallaxRef}>
+          <motion.div
+            ref={mockupParallaxRef}
+            style={{
+              y: prefersReducedMotion ? 0 : mockupParallaxY,
+              rotate: prefersReducedMotion ? 0 : mockupParallaxRotate,
+            }}
+          >
           <FloatWrapper distance={8} duration={4.5}>
           <div className="relative rounded-2xl border border-gray-200 dark:border-gray-800/80 bg-[#F6F8FA]/60 dark:bg-[#161B22]/60 backdrop-blur-md overflow-hidden shadow-2xl transition-all duration-500">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-[#F6F8FA] dark:bg-[#161B22] transition-colors duration-300">
@@ -822,7 +788,7 @@ export default function HomePortal() {
             </div>
           </div>
           </FloatWrapper>
-          </div>
+          </motion.div>
         </motion.div>
       </section>
 
@@ -835,7 +801,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <h2 ref={featuresHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</h2>
+          <motion.h2 ref={featuresHeadingRef} onViewportEnter={() => scrambleReveal(featuresHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -886,7 +852,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <h2 ref={howItWorksHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</h2>
+          <motion.h2 ref={howItWorksHeadingRef} onViewportEnter={() => scrambleReveal(howItWorksHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -943,7 +909,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <h2 ref={previewHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</h2>
+          <motion.h2 ref={previewHeadingRef} onViewportEnter={() => scrambleReveal(previewHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -1091,7 +1057,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16 space-y-4"
         >
-          <h2 ref={faqHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</h2>
+          <motion.h2 ref={faqHeadingRef} onViewportEnter={() => scrambleReveal(faqHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
