@@ -44,3 +44,38 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm test
+
+  security-audit:
+    name: Security audit (production dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Gated on --omit=dev deliberately: this fails the build only for
+      # vulnerabilities in packages that actually ship to users. Vitest's
+      # own dev-server toolchain (esbuild/vite) currently has known
+      # moderate/high advisories with no non-breaking fix available yet —
+      # real, but irrelevant to what's actually deployed, since it never
+      # leaves the CI/dev environment. Excluding dev deps here is the
+      # standard, deliberate distinction — not a workaround to silence
+      # noise. `audit-level=high` catches high/critical; moderate-and-below
+      # in production deps are reported but don't fail the build.
+      - name: Audit frontend production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit backend production dependencies
+        working-directory: server
+        run: npm audit --omit=dev --audit-level=high
+
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3

@@ -1,18 +1,41 @@
+import * as Sentry from '@sentry/node';
+
 /**
- * Central place for reporting unexpected (5xx) server errors. Currently
- * does structured JSON logging — but this is the one seam where a real
- * error tracker (Sentry, Rollbar, Bugsnag, etc.) belongs. To wire one in:
+ * Central place for reporting unexpected (5xx) server errors.
  *
- *   1. npm install @sentry/node
- *   2. Sentry.init({ dsn: process.env.SENTRY_DSN }) once at boot (index.js)
- *   3. Replace the console.error below with:
- *        Sentry.captureException(err, { extra: context })
+ * If SENTRY_DSN is set, errors are actually sent to Sentry — this is a
+ * real, working integration, not a stubbed placeholder. If it isn't set
+ * (e.g. local development, or a deployment that hasn't configured one
+ * yet), this silently falls back to structured console logging only, so
+ * the app never depends on a third-party service being configured to run.
  *
- * Deliberately not faking that integration here with an uninstalled
- * package — a stubbed "Sentry.captureException" call that silently does
- * nothing is worse than an honest structured log, since it *looks* like
- * error tracking exists in production when it doesn't.
+ * initSentry() is called once at boot (see index.js) — deliberately not
+ * using a separate instrument.js/auto-instrumentation setup, since this
+ * app only needs manual error capture (via reportError below), not
+ * distributed tracing or profiling.
  */
+let sentryEnabled = false;
+
+export function initSentry() {
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) return false;
+
+  Sentry.init({
+    dsn,
+    environment: process.env.NODE_ENV || 'development',
+    // Error tracking only — no performance tracing/profiling. Those are
+    // heavier (extra overhead per request, extra Sentry quota) and this
+    // app doesn't need them yet; they're a natural next step if it does.
+    tracesSampleRate: 0,
+  });
+  sentryEnabled = true;
+  return true;
+}
+
+export function isSentryEnabled() {
+  return sentryEnabled;
+}
+
 export function reportError(err, context = {}) {
   const entry = {
     level: 'error',
@@ -23,6 +46,10 @@ export function reportError(err, context = {}) {
     timestamp: new Date().toISOString(),
   };
   console.error(JSON.stringify(entry));
+
+  if (sentryEnabled) {
+    Sentry.captureException(err, { extra: context });
+  }
 }
 
 export default reportError;

@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
 import { connectDb } from './db/connection.js';
+import { initSentry } from './services/errorReporter.js';
+
+const sentryActive = initSentry();
 
 const PORT = process.env.PORT || 3001;
 const app = createApp();
@@ -31,6 +34,7 @@ async function start() {
     app.listen(PORT, () => {
       console.log(`Mind Forge API is running on port ${PORT}`);
       console.log(`CORS allowed origins: http://localhost:5173, ${process.env.CORS_ORIGIN || '(not set)'}`);
+      console.log(`Error tracking (Sentry): ${sentryActive ? 'active' : 'not configured (SENTRY_DSN not set)'}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);

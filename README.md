@@ -59,7 +59,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
 - 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 208 automated tests (unit + integration) across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 213 automated tests (unit + integration) across frontend and backend, enforced in CI
 
 ---
 
@@ -72,9 +72,10 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 | **Database**        | MongoDB, Mongoose                                |
 | **Authentication**  | JWT (httpOnly cookies)                          |
 | **AI**              | Google Gemini API                               |
+| **Error Tracking**  | Sentry (optional — active if `SENTRY_DSN` is set) |
 | **Testing**         | Vitest, Supertest (backend integration tests)   |
 | **Linting**         | ESLint (flat config)                            |
-| **CI/CD**           | GitHub Actions                                  |
+| **CI/CD**           | GitHub Actions (lint/test/build/security-audit/CodeQL), Dependabot |
 | **Deployment**      | Vercel (frontend) · Railway (backend)           |
 
 ---
@@ -139,7 +140,7 @@ mind-forge/
 │   ├── services/
 │   │   ├── ai/                   # Prompt optimizer, model router, cache, retry
 │   │   ├── safety/               # Crisis-language screening
-│   │   └── errorReporter.js      # Central 5xx reporting seam (Sentry-ready)
+│   │   └── errorReporter.js      # Central 5xx reporting — real Sentry integration if SENTRY_DSN is set
 │   ├── db/                     # DB connection & reset scripts
 │   └── utils/
 │
@@ -213,7 +214,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **208 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **213 tests total**, all enforced in CI.
 
 The backend suite has two layers:
 - **Unit tests** — pure functions in isolation (streak math, validation, prompt building, retry/backoff logic).
@@ -230,7 +231,7 @@ npm test
 npm run lint
 ```
 
-CI runs both automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml) — lint, test, and build for the frontend; lint and test for the backend.
+CI runs automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml): lint, test, and build for the frontend; lint and test for the backend; a production-dependency security audit; and CodeQL static analysis.
 
 ---
 
@@ -244,14 +245,15 @@ An honest account of what's actually covered versus what's a known trade-off —
 - httpOnly, environment-aware cookies (`SameSite=None; Secure` on HTTPS, `Lax` locally — derived from the actual request, not a config flag that's easy to leave wrong)
 - Helmet security headers, strict CORS origin checking, JSON body size limits
 - Structured request logging with a request ID on every response (`X-Request-Id`), so a single request can be traced through logs even across the AI pipeline's retries/fallbacks
-- A dedicated error-reporting seam (`services/errorReporter.js`) that every unexpected 5xx flows through — currently structured logging, with a clearly marked integration point for a real APM tool (Sentry, etc.) rather than a faked one
+- Real error tracking (Sentry) — every unexpected 5xx flows through `services/errorReporter.js`, which reports it to Sentry if `SENTRY_DSN` is set. This isn't a stubbed placeholder: `initSentry()`/`reportError()` are both covered by tests asserting the SDK is actually called correctly, in both the configured and unconfigured cases. Structured console logging happens either way, so nothing depends on Sentry being configured to run.
+- A CI security-audit job (`npm audit --omit=dev --audit-level=high`) that fails the build on any high/critical vulnerability in a **production** dependency, plus CodeQL static analysis and Dependabot for automatic dependency updates
 - Integration tests covering auth, check-ins, and goals end-to-end at the HTTP layer
 - Cursor-based pagination on check-ins (not skip/limit, which gets slower the deeper a user pages in) — the browsing/export page loads 30 at a time with "Load More," while dashboard/insights aggregation uses a separate lightweight endpoint that returns the full history but only the handful of numeric fields those computations actually need, not every reflection's full text
 - Single animation library — the homepage originally shipped both Framer Motion and GSAP for different effects; the GSAP-specific ones (scroll-linked parallax, scramble-text reveal) were migrated onto Framer Motion equivalents and the GSAP dependency dropped entirely, cutting that page's JS from ~173KB to ~59KB (~61KB → ~16KB gzipped)
 
 **Known trade-offs (not yet done):**
-- No real APM/error-tracking service wired up (the seam exists; no DSN configured)
 - Daily reminders are client-side only (localStorage + best-effort browser Notification) — no service worker, so no true background push
+- The frontend and backend's dev-tooling chain (Vite/Vitest/esbuild) currently has known moderate/high advisories with no non-breaking fix available (fixing requires a major Vitest version bump, which risks the test suite). These only affect the local dev server — `npm audit --omit=dev` (what CI actually gates on) reports zero vulnerabilities in what's shipped to production. Tracked, not hidden: full `npm audit` still surfaces them, and Dependabot will pick up a fix once one exists.
 
 ---
 

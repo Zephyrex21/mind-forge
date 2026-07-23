@@ -1,0 +1,32 @@
+# Dependabot: automatically opens a PR when a dependency has an update
+# available, with security patches prioritized. Covers both npm projects
+# (frontend at the repo root, backend in server/) and the GitHub Actions
+# workflows themselves — action versions get stale and occasionally
+# carry their own advisories too, so it's worth keeping current.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Batch non-security patch/minor bumps into one PR instead of one
+      # PR per package — security updates are never grouped, so those
+      # still surface individually and immediately.
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
