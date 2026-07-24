@@ -59,7 +59,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
 - 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 213 automated tests (unit + integration) across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 215 automated tests (unit + integration) across frontend and backend, enforced in CI
 
 ---
 
@@ -73,7 +73,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 | **Authentication**  | JWT (httpOnly cookies)                          |
 | **AI**              | Google Gemini API                               |
 | **Error Tracking**  | Sentry (optional — active if `SENTRY_DSN` is set) |
-| **Testing**         | Vitest, Supertest (backend integration tests)   |
+| **Testing**         | Vitest, Supertest (integration tests), Autocannon (load testing) |
 | **Linting**         | ESLint (flat config)                            |
 | **CI/CD**           | GitHub Actions (lint/test/build/security-audit/CodeQL), Dependabot |
 | **Deployment**      | Vercel (frontend) · Railway (backend)           |
@@ -142,6 +142,7 @@ mind-forge/
 │   │   ├── safety/               # Crisis-language screening
 │   │   └── errorReporter.js      # Central 5xx reporting — real Sentry integration if SENTRY_DSN is set
 │   ├── db/                     # DB connection & reset scripts
+│   ├── perf/                    # Manual load tests (npm run loadtest) — see perf/RESULTS.md
 │   └── utils/
 │
 └── .github/workflows/ci.yml  # Lint + test + build on every push/PR
@@ -214,7 +215,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **213 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **215 tests total**, all enforced in CI.
 
 The backend suite has two layers:
 - **Unit tests** — pure functions in isolation (streak math, validation, prompt building, retry/backoff logic).
@@ -247,6 +248,8 @@ An honest account of what's actually covered versus what's a known trade-off —
 - Structured request logging with a request ID on every response (`X-Request-Id`), so a single request can be traced through logs even across the AI pipeline's retries/fallbacks
 - Real error tracking (Sentry) — every unexpected 5xx flows through `services/errorReporter.js`, which reports it to Sentry if `SENTRY_DSN` is set. This isn't a stubbed placeholder: `initSentry()`/`reportError()` are both covered by tests asserting the SDK is actually called correctly, in both the configured and unconfigured cases. Structured console logging happens either way, so nothing depends on Sentry being configured to run.
 - A CI security-audit job (`npm audit --omit=dev --audit-level=high`) that fails the build on any high/critical vulnerability in a **production** dependency, plus CodeQL static analysis and Dependabot for automatic dependency updates
+- Measured load testing (`npm run loadtest`, backend) — real req/sec and latency numbers via `autocannon`, not estimates. See [`server/perf/RESULTS.md`](server/perf/RESULTS.md) for the latest run and an honest breakdown of what the numbers do and don't tell you (the DB layer is mocked — see that file for why, and what would actually change with a real database in the loop)
+- The global rate limiter's *enforcement* (not just its configuration) is verified directly: `middleware/rateLimiter.test.js` fires 105 real requests and asserts exactly the first 100 succeed and the rest get a real 429
 - Integration tests covering auth, check-ins, and goals end-to-end at the HTTP layer
 - Cursor-based pagination on check-ins (not skip/limit, which gets slower the deeper a user pages in) — the browsing/export page loads 30 at a time with "Load More," while dashboard/insights aggregation uses a separate lightweight endpoint that returns the full history but only the handful of numeric fields those computations actually need, not every reflection's full text
 - Single animation library — the homepage originally shipped both Framer Motion and GSAP for different effects; the GSAP-specific ones (scroll-linked parallax, scramble-text reveal) were migrated onto Framer Motion equivalents and the GSAP dependency dropped entirely, cutting that page's JS from ~173KB to ~59KB (~61KB → ~16KB gzipped)

@@ -9,6 +9,7 @@
     "db:reset": "node db/reinit.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "loadtest": "vitest run --config vitest.loadtest.config.js",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "autocannon": "^8.0.0",
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
     "supertest": "^7.2.2",
