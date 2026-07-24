@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
-import { connectDb } from './db/connection.js';
-import { initSentry } from './services/errorReporter.js';
+import { connectDb, closeDb } from './db/connection.js';
+import { initSentry, reportError } from './services/errorReporter.js';
+import { createShutdownHandler } from './shutdown.js';
 
 const sentryActive = initSentry();
 
@@ -31,10 +32,32 @@ async function start() {
   validateEnv();
   try {
     await connectDb();
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Mind Forge API is running on port ${PORT}`);
       console.log(`CORS allowed origins: http://localhost:5173, ${process.env.CORS_ORIGIN || '(not set)'}`);
       console.log(`Error tracking (Sentry): ${sentryActive ? 'active' : 'not configured (SENTRY_DSN not set)'}`);
+    });
+
+    // Graceful shutdown — see shutdown.js for why this matters. Most
+    // PaaS hosts (Railway, Render, Fly) send SIGTERM before killing the
+    // process during a deploy; without handling it, in-flight requests
+    // get dropped mid-response and the DB connection isn't closed cleanly.
+    const shutdown = createShutdownHandler({ server, closeDb });
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // An uncaught exception or unhandled rejection means the process is
+    // in an unknown state — the correct response is to report it, then
+    // exit and let the process manager restart cleanly, not to keep
+    // running in a potentially-corrupted state and hope for the best.
+    process.on('uncaughtException', (err) => {
+      reportError(err, { fatal: true, kind: 'uncaughtException' });
+      shutdown('uncaughtException');
+    });
+    process.on('unhandledRejection', (reason) => {
+      const err = reason instanceof Error ? reason : new Error(String(reason));
+      reportError(err, { fatal: true, kind: 'unhandledRejection' });
+      shutdown('unhandledRejection');
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);

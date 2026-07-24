@@ -41,3 +41,6 @@ server/data/*.db
 server/data/*.db-journal
 server/data/*.db-wal
 server/data/*.db-shm
+
+# Local DB backups (contain real user data — never commit these)
+server/backups/

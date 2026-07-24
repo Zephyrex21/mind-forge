@@ -7,6 +7,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "db:reset": "node db/reinit.js",
+    "db:backup": "bash scripts/backup-db.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "loadtest": "vitest run --config vitest.loadtest.config.js",

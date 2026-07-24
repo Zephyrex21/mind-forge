@@ -59,7 +59,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
 - 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 215 automated tests (unit + integration) across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 227 automated tests (unit + integration) across frontend and backend, enforced in CI
 
 ---
 
@@ -133,15 +133,19 @@ mind-forge/
 ├── server/                   # Backend (Node.js + Express)
 │   ├── app.js                  # Express app factory (importable, DB-free — what
 │   │                             integration tests boot against)
-│   ├── index.js                 # Bootstrap: env validation, DB connect, app.listen()
+│   ├── index.js                 # Bootstrap: env validation, DB connect, app.listen(),
+│   │                             graceful shutdown & crash handling
+│   ├── shutdown.js              # Testable graceful-shutdown logic (SIGTERM/SIGINT)
 │   ├── routes/                 # Express route handlers + their integration tests
 │   ├── models/                  # Mongoose schemas (User, Checkin, Goal)
-│   ├── middleware/              # Auth, error handling, request logging
+│   ├── middleware/              # Auth, error handling, request logging, rate limiting
 │   ├── services/
 │   │   ├── ai/                   # Prompt optimizer, model router, cache, retry
 │   │   ├── safety/               # Crisis-language screening
 │   │   └── errorReporter.js      # Central 5xx reporting — real Sentry integration if SENTRY_DSN is set
-│   ├── db/                     # DB connection & reset scripts
+│   ├── scripts/
+│   │   └── backup-db.sh          # mongodump/mongorestore wrapper (npm run db:backup)
+│   ├── db/                     # DB connection (with retry/backoff) & reset scripts
 │   ├── perf/                    # Manual load tests (npm run loadtest) — see perf/RESULTS.md
 │   └── utils/
 │
@@ -215,7 +219,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **215 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **227 tests total**, all enforced in CI.
 
 The backend suite has two layers:
 - **Unit tests** — pure functions in isolation (streak math, validation, prompt building, retry/backoff logic).
@@ -250,6 +254,9 @@ An honest account of what's actually covered versus what's a known trade-off —
 - A CI security-audit job (`npm audit --omit=dev --audit-level=high`) that fails the build on any high/critical vulnerability in a **production** dependency, plus CodeQL static analysis and Dependabot for automatic dependency updates
 - Measured load testing (`npm run loadtest`, backend) — real req/sec and latency numbers via `autocannon`, not estimates. See [`server/perf/RESULTS.md`](server/perf/RESULTS.md) for the latest run and an honest breakdown of what the numbers do and don't tell you (the DB layer is mocked — see that file for why, and what would actually change with a real database in the loop)
 - The global rate limiter's *enforcement* (not just its configuration) is verified directly: `middleware/rateLimiter.test.js` fires 105 real requests and asserts exactly the first 100 succeed and the rest get a real 429
+- Graceful shutdown (`shutdown.js`) — on `SIGTERM`/`SIGINT` (what Railway/Render/Fly send before killing a process during a deploy), the server stops accepting new connections, lets in-flight requests finish, then closes the database connection, with a forced-exit safety net if something hangs. Without this, a deploy would drop in-flight requests mid-response. Also handles `uncaughtException`/`unhandledRejection` by reporting them (Sentry, if configured) and shutting down cleanly rather than continuing to run in a possibly-corrupted state.
+- Database connection retry with exponential backoff on initial connect (`db/connection.js`) — a transient DNS hiccup or a moment of Atlas unavailability at boot no longer crash-loops the container on the first failure
+- A `mongodump`/`mongorestore`-based backup script (`server/scripts/backup-db.sh`, `npm run db:backup`) — verified working against a stubbed `mongodump` binary (URI resolution from `.env` or a CLI argument, and the "tool not installed" error path both actually tested, not just assumed)
 - Integration tests covering auth, check-ins, and goals end-to-end at the HTTP layer
 - Cursor-based pagination on check-ins (not skip/limit, which gets slower the deeper a user pages in) — the browsing/export page loads 30 at a time with "Load More," while dashboard/insights aggregation uses a separate lightweight endpoint that returns the full history but only the handful of numeric fields those computations actually need, not every reflection's full text
 - Single animation library — the homepage originally shipped both Framer Motion and GSAP for different effects; the GSAP-specific ones (scroll-linked parallax, scramble-text reveal) were migrated onto Framer Motion equivalents and the GSAP dependency dropped entirely, cutting that page's JS from ~173KB to ~59KB (~61KB → ~16KB gzipped)
@@ -286,6 +293,8 @@ A code-level audit (not a live screen-reader session — that's a real limitatio
 | Backend     | [Railway](https://railway.app) | Express API, connects to MongoDB Atlas                   |
 
 The frontend build (`npm run build`) is fully static and can be deployed anywhere that serves static files — Vercel is just what this project uses.
+
+The backend handles `SIGTERM` gracefully (see [Production Readiness](#-production-readiness)), so a Railway deploy/restart won't drop in-flight requests. Back up the database before a risky migration or schema change with `npm run db:backup` (wraps `mongodump`; see `server/scripts/backup-db.sh`).
 
 ---
 
