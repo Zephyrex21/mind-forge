@@ -32,7 +32,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 
 ## 🌐 Live Demo
 
-**Website:** `<your-demo-link>`
+**Website:** [mind-forge-iota-ashy.vercel.app](https://mind-forge-iota-ashy.vercel.app/)
 
 <!--
   Add a screenshot or short GIF of the homepage / check-in flow here once
