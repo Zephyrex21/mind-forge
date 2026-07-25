@@ -105,14 +105,14 @@ describe('GET /api/checkins', () => {
   });
 
   it('returns an empty items array and no cursor for a new user', async () => {
-    const res = await request(app).get('/api/checkins').set('Cookie', cookieFor(USER_A));
+    const res = await request(app).get('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ items: [], nextCursor: null });
   });
 
   it('never returns another user\'s check-ins', async () => {
-    await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 4 });
-    const res = await request(app).get('/api/checkins').set('Cookie', cookieFor(USER_B));
+    await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 4 });
+    const res = await request(app).get('/api/checkins').set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge');
     expect(res.body.items).toEqual([]);
   });
 
@@ -121,16 +121,16 @@ describe('GET /api/checkins', () => {
     for (let i = 0; i < 5; i += 1) {
       // Sequential awaits give each check-in a genuinely later createdAt
       // timestamp, so page ordering (and the cursor) is deterministic.
-      await request(app).post('/api/checkins').set('Cookie', cookie).send({ mood: i });
+      await request(app).post('/api/checkins').set('Cookie', cookie).set('x-requested-with', 'mindforge').send({ mood: i });
     }
 
-    const firstPage = await request(app).get('/api/checkins?limit=2').set('Cookie', cookie);
+    const firstPage = await request(app).get('/api/checkins?limit=2').set('Cookie', cookie).set('x-requested-with', 'mindforge');
     expect(firstPage.body.items).toHaveLength(2);
     expect(firstPage.body.nextCursor).not.toBeNull();
 
     const secondPage = await request(app)
       .get(`/api/checkins?limit=2&cursor=${encodeURIComponent(firstPage.body.nextCursor)}`)
-      .set('Cookie', cookie);
+      .set('Cookie', cookie).set('x-requested-with', 'mindforge');
     expect(secondPage.body.items).toHaveLength(2);
 
     // No overlap between pages.
@@ -141,8 +141,8 @@ describe('GET /api/checkins', () => {
 
   it('reports nextCursor as null once the last page is reached', async () => {
     const cookie = cookieFor(USER_A);
-    await request(app).post('/api/checkins').set('Cookie', cookie).send({ mood: 3 });
-    const res = await request(app).get('/api/checkins?limit=100').set('Cookie', cookie);
+    await request(app).post('/api/checkins').set('Cookie', cookie).set('x-requested-with', 'mindforge').send({ mood: 3 });
+    const res = await request(app).get('/api/checkins?limit=100').set('Cookie', cookie).set('x-requested-with', 'mindforge');
     expect(res.body.nextCursor).toBeNull();
   });
 });
@@ -156,16 +156,16 @@ describe('GET /api/checkins/analytics', () => {
   it("returns the user's full history regardless of page size", async () => {
     const cookie = cookieFor(USER_A);
     for (let i = 0; i < 5; i += 1) {
-      await request(app).post('/api/checkins').set('Cookie', cookie).send({ mood: i });
+      await request(app).post('/api/checkins').set('Cookie', cookie).set('x-requested-with', 'mindforge').send({ mood: i });
     }
-    const res = await request(app).get('/api/checkins/analytics').set('Cookie', cookie);
+    const res = await request(app).get('/api/checkins/analytics').set('Cookie', cookie).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(5);
   });
 
   it('never returns another user\'s check-ins', async () => {
-    await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 4 });
-    const res = await request(app).get('/api/checkins/analytics').set('Cookie', cookieFor(USER_B));
+    await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 4 });
+    const res = await request(app).get('/api/checkins/analytics').set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge');
     expect(res.body).toEqual([]);
   });
 });
@@ -174,7 +174,7 @@ describe('POST /api/checkins', () => {
   it('creates a check-in and coerces numeric fields', async () => {
     const res = await request(app)
       .post('/api/checkins')
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ mood: '4', energy: '3', sleepHours: '' });
 
     expect(res.status).toBe(201);
@@ -186,7 +186,7 @@ describe('POST /api/checkins', () => {
   it('never lets the client inject its own userId or _id into the saved record', async () => {
     const res = await request(app)
       .post('/api/checkins')
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ mood: 3, userId: 'someone-else', _id: 'forged-id' });
 
     expect(res.body.userId).toBe(USER_A);
@@ -196,23 +196,23 @@ describe('POST /api/checkins', () => {
 
 describe('GET /api/checkins/:id', () => {
   it('returns 404 for a check-in that does not exist', async () => {
-    const res = await request(app).get('/api/checkins/does-not-exist').set('Cookie', cookieFor(USER_A));
+    const res = await request(app).get('/api/checkins/does-not-exist').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for another user's check-in (not a 403 — doesn't confirm it exists)", async () => {
-    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 3 });
-    const res = await request(app).get(`/api/checkins/${created.body._id}`).set('Cookie', cookieFor(USER_B));
+    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 3 });
+    const res = await request(app).get(`/api/checkins/${created.body._id}`).set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(404);
   });
 });
 
 describe('PUT /api/checkins/:id', () => {
   it('updates a check-in the user owns', async () => {
-    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 2 });
+    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 2 });
     const res = await request(app)
       .put(`/api/checkins/${created.body._id}`)
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ mood: 5 });
 
     expect(res.status).toBe(200);
@@ -222,40 +222,40 @@ describe('PUT /api/checkins/:id', () => {
 
 describe('POST /api/checkins/:id/favorite', () => {
   it('toggles favorite status on and back off', async () => {
-    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 4 });
+    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 4 });
     const id = created.body._id;
 
-    const first = await request(app).post(`/api/checkins/${id}/favorite`).set('Cookie', cookieFor(USER_A));
+    const first = await request(app).post(`/api/checkins/${id}/favorite`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(first.body.isFavorite).toBe(true);
 
-    const second = await request(app).post(`/api/checkins/${id}/favorite`).set('Cookie', cookieFor(USER_A));
+    const second = await request(app).post(`/api/checkins/${id}/favorite`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(second.body.isFavorite).toBe(false);
   });
 });
 
 describe('DELETE /api/checkins/:id', () => {
   it('deletes a check-in, then 404s on a second delete', async () => {
-    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).send({ mood: 4 });
+    const created = await request(app).post('/api/checkins').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ mood: 4 });
     const id = created.body._id;
 
-    const first = await request(app).delete(`/api/checkins/${id}`).set('Cookie', cookieFor(USER_A));
+    const first = await request(app).delete(`/api/checkins/${id}`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(first.status).toBe(200);
     expect(first.body.success).toBe(true);
 
-    const second = await request(app).delete(`/api/checkins/${id}`).set('Cookie', cookieFor(USER_A));
+    const second = await request(app).delete(`/api/checkins/${id}`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(second.status).toBe(404);
   });
 });
 
 describe('GET /api/checkins/stats', () => {
   it('defaults tzOffset to 0 when missing or invalid', async () => {
-    const res = await request(app).get('/api/checkins/stats').set('Cookie', cookieFor(USER_A));
+    const res = await request(app).get('/api/checkins/stats').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body.tzOffsetMinutes).toBe(0);
   });
 
   it('forwards a valid tzOffset query param through to the model', async () => {
-    const res = await request(app).get('/api/checkins/stats?tzOffset=-330').set('Cookie', cookieFor(USER_A));
+    const res = await request(app).get('/api/checkins/stats?tzOffset=-330').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.body.tzOffsetMinutes).toBe(-330);
   });
 });

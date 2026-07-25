@@ -116,7 +116,7 @@ beforeEach(() => {
 
 describe('POST /api/auth/register', () => {
   it('creates an account and sets an auth cookie', async () => {
-    const res = await request(app).post('/api/auth/register').send({ email: 'new@example.com', password: 'password123' });
+    const res = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'new@example.com', password: 'password123' });
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe('new@example.com');
     expect(res.body.user.isGuest).toBe(false);
@@ -124,53 +124,53 @@ describe('POST /api/auth/register', () => {
   });
 
   it('rejects an invalid email', async () => {
-    const res = await request(app).post('/api/auth/register').send({ email: 'not-an-email', password: 'password123' });
+    const res = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'not-an-email', password: 'password123' });
     expect(res.status).toBe(400);
   });
 
   it('rejects a password shorter than 8 characters', async () => {
-    const res = await request(app).post('/api/auth/register').send({ email: 'a@example.com', password: 'short' });
+    const res = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'a@example.com', password: 'short' });
     expect(res.status).toBe(400);
   });
 
   it('rejects registering the same email twice', async () => {
-    await request(app).post('/api/auth/register').send({ email: 'dupe@example.com', password: 'password123' });
-    const res = await request(app).post('/api/auth/register').send({ email: 'dupe@example.com', password: 'password123' });
+    await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'dupe@example.com', password: 'password123' });
+    const res = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'dupe@example.com', password: 'password123' });
     expect(res.status).toBe(409);
   });
 });
 
 describe('POST /api/auth/login', () => {
   it('logs in with correct credentials', async () => {
-    await request(app).post('/api/auth/register').send({ email: 'login@example.com', password: 'password123' });
-    const res = await request(app).post('/api/auth/login').send({ email: 'login@example.com', password: 'password123' });
+    await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'login@example.com', password: 'password123' });
+    const res = await request(app).post('/api/auth/login').set('x-requested-with', 'mindforge').send({ email: 'login@example.com', password: 'password123' });
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe('login@example.com');
     expect(extractCookie(res)).toMatch(/^auth_token=/);
   });
 
   it('rejects the wrong password without revealing whether the account exists', async () => {
-    await request(app).post('/api/auth/register').send({ email: 'login2@example.com', password: 'password123' });
-    const res = await request(app).post('/api/auth/login').send({ email: 'login2@example.com', password: 'wrongpassword' });
+    await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'login2@example.com', password: 'password123' });
+    const res = await request(app).post('/api/auth/login').set('x-requested-with', 'mindforge').send({ email: 'login2@example.com', password: 'wrongpassword' });
     expect(res.status).toBe(401);
     expect(res.body.error).toBe('Invalid email or password.');
   });
 
   it('rejects a login for an email that was never registered', async () => {
-    const res = await request(app).post('/api/auth/login').send({ email: 'ghost@example.com', password: 'password123' });
+    const res = await request(app).post('/api/auth/login').set('x-requested-with', 'mindforge').send({ email: 'ghost@example.com', password: 'password123' });
     expect(res.status).toBe(401);
   });
 
   it('rejects logging into a guest account via the password login route', async () => {
-    await request(app).post('/api/auth/guest');
-    const res = await request(app).post('/api/auth/login').send({ email: 'guest@example.com', password: 'password123' });
+    await request(app).post('/api/auth/guest').set('x-requested-with', 'mindforge');
+    const res = await request(app).post('/api/auth/login').set('x-requested-with', 'mindforge').send({ email: 'guest@example.com', password: 'password123' });
     expect(res.status).toBe(401);
   });
 });
 
 describe('POST /api/auth/guest', () => {
   it('creates a guest account with no email/password required', async () => {
-    const res = await request(app).post('/api/auth/guest');
+    const res = await request(app).post('/api/auth/guest').set('x-requested-with', 'mindforge');
     expect(res.status).toBe(201);
     expect(res.body.user.isGuest).toBe(true);
     expect(res.body.user.email).toBeNull();
@@ -186,10 +186,10 @@ describe('GET /api/auth/me', () => {
   });
 
   it('returns the current user when a valid cookie is present', async () => {
-    const registerRes = await request(app).post('/api/auth/register').send({ email: 'me@example.com', password: 'password123' });
+    const registerRes = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'me@example.com', password: 'password123' });
     const cookie = extractCookie(registerRes);
 
-    const res = await request(app).get('/api/auth/me').set('Cookie', cookie);
+    const res = await request(app).get('/api/auth/me').set('Cookie', cookie).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe('me@example.com');
   });
@@ -197,7 +197,7 @@ describe('GET /api/auth/me', () => {
 
 describe('POST /api/auth/logout', () => {
   it('clears the auth cookie', async () => {
-    const res = await request(app).post('/api/auth/logout');
+    const res = await request(app).post('/api/auth/logout').set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.headers['set-cookie'][0]).toMatch(/Max-Age=0/);
@@ -206,18 +206,21 @@ describe('POST /api/auth/logout', () => {
 
 describe('POST /api/auth/upgrade-guest', () => {
   it('rejects the request without an auth cookie', async () => {
-    const res = await request(app).post('/api/auth/upgrade-guest').send({ email: 'x@example.com', password: 'password123' });
+    const res = await request(app)
+      .post('/api/auth/upgrade-guest')
+      .set('x-requested-with', 'mindforge')
+      .send({ email: 'x@example.com', password: 'password123' });
     expect(res.status).toBe(401);
   });
 
   it("converts a guest account to a full account, keeping the same user id", async () => {
-    const guestRes = await request(app).post('/api/auth/guest');
+    const guestRes = await request(app).post('/api/auth/guest').set('x-requested-with', 'mindforge');
     const cookie = extractCookie(guestRes);
     const guestId = guestRes.body.user.id;
 
     const res = await request(app)
       .post('/api/auth/upgrade-guest')
-      .set('Cookie', cookie)
+      .set('Cookie', cookie).set('x-requested-with', 'mindforge')
       .send({ email: 'upgraded@example.com', password: 'password123' });
 
     expect(res.status).toBe(200);
@@ -227,12 +230,12 @@ describe('POST /api/auth/upgrade-guest', () => {
   });
 
   it('rejects upgrading an account that is not a guest', async () => {
-    const registerRes = await request(app).post('/api/auth/register').send({ email: 'already-full@example.com', password: 'password123' });
+    const registerRes = await request(app).post('/api/auth/register').set('x-requested-with', 'mindforge').send({ email: 'already-full@example.com', password: 'password123' });
     const cookie = extractCookie(registerRes);
 
     const res = await request(app)
       .post('/api/auth/upgrade-guest')
-      .set('Cookie', cookie)
+      .set('Cookie', cookie).set('x-requested-with', 'mindforge')
       .send({ email: 'other@example.com', password: 'password123' });
 
     expect(res.status).toBe(400);

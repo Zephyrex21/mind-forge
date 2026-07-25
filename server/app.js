@@ -9,6 +9,7 @@ import userRouter from './routes/user.js';
 import authRouter from './routes/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { requireCsrfHeader, CSRF_HEADER } from './middleware/csrf.js';
 
 /**
  * Builds the Express app without starting it or connecting to the
@@ -79,9 +80,19 @@ export function createApp() {
       callback(err);
     },
     credentials: true,
+    // Explicit rather than relying on cors' default "reflect whatever the
+    // browser asked for" behavior — CSRF_HEADER must be listed here or
+    // the CORS preflight itself would reject it even for the legitimate
+    // frontend origin, before requireCsrfHeader ever runs.
+    allowedHeaders: ['Content-Type', CSRF_HEADER],
   }));
 
   app.use(express.json({ limit: '50kb' }));
+
+  // CSRF mitigation — see middleware/csrf.js for the full threat-model
+  // writeup. Placed after CORS/body-parsing, before any route, so a
+  // request missing the required header never reaches route logic.
+  app.use(requireCsrfHeader);
 
   // Global rate limiter: 100 requests per minute per IP. Skipped in the
   // test environment — integration tests fire many requests in quick

@@ -17,13 +17,17 @@ async function request(path, options = {}) {
   let res;
   try {
     res = await fetch(`${API_BASE}${path}`, {
+      ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        // Required by the backend's CSRF protection (server/middleware/csrf.js)
+        // on every state-changing request. Harmless on GET too, so it's
+        // simplest to always include it rather than branch on method.
+        'X-Requested-With': 'mindforge',
         ...(options.headers || {}),
       },
       signal: controller.signal,
-      ...options,
     });
   } catch (err) {
     if (err.name === 'AbortError') {

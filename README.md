@@ -59,7 +59,7 @@ Built for **UN SDG 3 — Good Health & Wellbeing**.
 - 📈 **Emotion insights** — real patterns from your own data: sleep vs. mood, day-of-week trends, which coping tools actually correlate with a better mood, and a mood/energy correlation score
 - 🌬️ **Guided breathing exercise** — box breathing, 4-7-8, or simple calm breathing, with a synced animated visual — surfaced automatically after a low-mood check-in, and open to anyone without an account
 - 🎨 **Polished, animated UI** — light/dark mode, scroll-aware navigation, and tasteful motion throughout
-- ✅ **Real test coverage** — 227 automated tests (unit + integration) across frontend and backend, enforced in CI
+- ✅ **Real test coverage** — 250 automated tests (unit + integration) across frontend and backend, enforced in CI
 
 ---
 
@@ -138,7 +138,7 @@ mind-forge/
 │   ├── shutdown.js              # Testable graceful-shutdown logic (SIGTERM/SIGINT)
 │   ├── routes/                 # Express route handlers + their integration tests
 │   ├── models/                  # Mongoose schemas (User, Checkin, Goal)
-│   ├── middleware/              # Auth, error handling, request logging, rate limiting
+│   ├── middleware/              # Auth, error handling, request logging, rate limiting, CSRF
 │   ├── services/
 │   │   ├── ai/                   # Prompt optimizer, model router, cache, retry
 │   │   ├── safety/               # Crisis-language screening
@@ -219,7 +219,7 @@ The app will be running at **http://localhost:5173**.
 
 ## ✅ Testing & Code Quality
 
-Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **227 tests total**, all enforced in CI.
+Both the frontend and backend ship with real automated test suites (Vitest) and lint configs (ESLint flat config) — **250 tests total**, all enforced in CI.
 
 The backend suite has two layers:
 - **Unit tests** — pure functions in isolation (streak math, validation, prompt building, retry/backoff logic).
@@ -236,7 +236,7 @@ npm test
 npm run lint
 ```
 
-CI runs automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml): lint, test, and build for the frontend; lint and test for the backend; a production-dependency security audit; and CodeQL static analysis.
+CI runs automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml): lint, test, and build for the frontend; lint and test for the backend; a production-dependency security audit; secret scanning; and CodeQL static analysis.
 
 ---
 
@@ -252,6 +252,8 @@ An honest account of what's actually covered versus what's a known trade-off —
 - Structured request logging with a request ID on every response (`X-Request-Id`), so a single request can be traced through logs even across the AI pipeline's retries/fallbacks
 - Real error tracking (Sentry) — every unexpected 5xx flows through `services/errorReporter.js`, which reports it to Sentry if `SENTRY_DSN` is set. This isn't a stubbed placeholder: `initSentry()`/`reportError()` are both covered by tests asserting the SDK is actually called correctly, in both the configured and unconfigured cases. Structured console logging happens either way, so nothing depends on Sentry being configured to run.
 - A CI security-audit job (`npm audit --omit=dev --audit-level=high`) that fails the build on any high/critical vulnerability in a **production** dependency, plus CodeQL static analysis and Dependabot for automatic dependency updates
+- Secret scanning in CI (`gitleaks`, scanning full git history on every push, not just the latest commit) — catches an accidentally-committed API key or credential even if it was later "removed" in a follow-up commit, since it'd still be sitting in history
+- CSRF protection (`middleware/csrf.js`) for a real, specific threat this app actually has: the auth cookie is `SameSite=None` in production (required — the frontend on Vercel and backend on Railway are different domains, so the cookie has to work cross-site at all for normal login to function), which means a malicious third-party page could otherwise trick a logged-in user's browser into sending a state-changing request with their real auth cookie attached. CORS does not prevent this — it only stops another origin's JavaScript from *reading* the response, not from *sending* the request in the first place. Every non-GET request now requires a custom header that a plain cross-site form/fetch can't attach (custom headers force a CORS preflight, which fails for any origin except the one configured one). Verified end-to-end, not just as an isolated unit test: `goals.integration.test.js` simulates the actual attack (a valid auth cookie, no CSRF header) and confirms it's rejected.
 - Measured load testing (`npm run loadtest`, backend) — real req/sec and latency numbers via `autocannon`, not estimates. See [`server/perf/RESULTS.md`](server/perf/RESULTS.md) for the latest run and an honest breakdown of what the numbers do and don't tell you (the DB layer is mocked — see that file for why, and what would actually change with a real database in the loop)
 - The global rate limiter's *enforcement* (not just its configuration) is verified directly: `middleware/rateLimiter.test.js` fires 105 real requests and asserts exactly the first 100 succeed and the rest get a real 429
 - Graceful shutdown (`shutdown.js`) — on `SIGTERM`/`SIGINT` (what Railway/Render/Fly send before killing a process during a deploy), the server stops accepting new connections, lets in-flight requests finish, then closes the database connection, with a forced-exit safety net if something hangs. Without this, a deploy would drop in-flight requests mid-response. Also handles `uncaughtException`/`unhandledRejection` by reporting them (Sentry, if configured) and shutting down cleanly rather than continuing to run in a possibly-corrupted state.

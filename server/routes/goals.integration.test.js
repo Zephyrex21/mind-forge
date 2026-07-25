@@ -95,12 +95,12 @@ describe('GET /api/goals', () => {
   });
 
   it('rejects a request with a garbage auth cookie', async () => {
-    const res = await request(app).get('/api/goals').set('Cookie', 'auth_token=not-a-real-token');
+    const res = await request(app).get('/api/goals').set('Cookie', 'auth_token=not-a-real-token').set('x-requested-with', 'mindforge');
     expect(res.status).toBe(401);
   });
 
   it('returns an empty list for a new user', async () => {
-    const res = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_A));
+    const res = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
@@ -110,7 +110,7 @@ describe('POST /api/goals', () => {
   it('creates a goal and returns it', async () => {
     const res = await request(app)
       .post('/api/goals')
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ title: 'Meditate 10 minutes' });
 
     expect(res.status).toBe(201);
@@ -119,40 +119,40 @@ describe('POST /api/goals', () => {
   });
 
   it('rejects an empty title', async () => {
-    const res = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: '   ' });
+    const res = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: '   ' });
     expect(res.status).toBe(400);
     expect(res.body.error).toBeTruthy();
   });
 
   it('rejects a missing title field entirely', async () => {
-    const res = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({});
+    const res = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({});
     expect(res.status).toBe(400);
   });
 
   it('rejects creating an active 13th goal (over the 12-goal limit)', async () => {
     const agent = request(app);
     for (let i = 0; i < 12; i += 1) {
-      const res = await agent.post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: `Goal ${i}` });
+      const res = await agent.post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: `Goal ${i}` });
       expect(res.status).toBe(201);
     }
-    const overLimit = await agent.post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'One too many' });
+    const overLimit = await agent.post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'One too many' });
     expect(overLimit.status).toBe(400);
     expect(overLimit.body.error).toMatch(/12/);
   });
 
   it('keeps two different users\' goal counts independent', async () => {
-    await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'A goal' });
-    const res = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_B));
+    await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'A goal' });
+    const res = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge');
     expect(res.body).toEqual([]);
   });
 });
 
 describe('PUT /api/goals/:id', () => {
   it('renames a goal the user owns', async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Old name' });
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Old name' });
     const res = await request(app)
       .put(`/api/goals/${created.body._id}`)
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ title: 'New name' });
 
     expect(res.status).toBe(200);
@@ -160,10 +160,10 @@ describe('PUT /api/goals/:id', () => {
   });
 
   it("returns 404 when trying to rename another user's goal", async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Mine' });
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Mine' });
     const res = await request(app)
       .put(`/api/goals/${created.body._id}`)
-      .set('Cookie', cookieFor(USER_B))
+      .set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge')
       .send({ title: 'Hijacked' });
 
     expect(res.status).toBe(404);
@@ -172,33 +172,33 @@ describe('PUT /api/goals/:id', () => {
 
 describe('POST /api/goals/:id/toggle', () => {
   it('marks a day complete, then un-marks it on a second toggle', async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Drink water' });
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Drink water' });
     const id = created.body._id;
 
-    const first = await request(app).post(`/api/goals/${id}/toggle`).set('Cookie', cookieFor(USER_A)).send({ date: '2026-07-20' });
+    const first = await request(app).post(`/api/goals/${id}/toggle`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ date: '2026-07-20' });
     expect(first.status).toBe(200);
     expect(first.body.completions).toContain('2026-07-20');
 
-    const second = await request(app).post(`/api/goals/${id}/toggle`).set('Cookie', cookieFor(USER_A)).send({ date: '2026-07-20' });
+    const second = await request(app).post(`/api/goals/${id}/toggle`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ date: '2026-07-20' });
     expect(second.status).toBe(200);
     expect(second.body.completions).not.toContain('2026-07-20');
   });
 
   it('rejects a malformed date', async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Drink water' });
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Drink water' });
     const res = await request(app)
       .post(`/api/goals/${created.body._id}/toggle`)
-      .set('Cookie', cookieFor(USER_A))
+      .set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge')
       .send({ date: 'not-a-date' });
 
     expect(res.status).toBe(400);
   });
 
   it("returns 404 when toggling another user's goal", async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Mine' });
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Mine' });
     const res = await request(app)
       .post(`/api/goals/${created.body._id}/toggle`)
-      .set('Cookie', cookieFor(USER_B))
+      .set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge')
       .send({ date: '2026-07-20' });
 
     expect(res.status).toBe(404);
@@ -207,25 +207,56 @@ describe('POST /api/goals/:id/toggle', () => {
 
 describe('POST /api/goals/:id/archive', () => {
   it('archives a goal so it no longer appears in the list', async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Temporary' });
-    await request(app).post(`/api/goals/${created.body._id}/archive`).set('Cookie', cookieFor(USER_A));
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Temporary' });
+    await request(app).post(`/api/goals/${created.body._id}/archive`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
 
-    const list = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_A));
+    const list = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(list.body).toEqual([]);
   });
 });
 
 describe('DELETE /api/goals/:id', () => {
   it('permanently deletes a goal the user owns', async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Delete me' });
-    const res = await request(app).delete(`/api/goals/${created.body._id}`).set('Cookie', cookieFor(USER_A));
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Delete me' });
+    const res = await request(app).delete(`/api/goals/${created.body._id}`).set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
 
   it("returns 404 deleting another user's goal", async () => {
-    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).send({ title: 'Mine' });
-    const res = await request(app).delete(`/api/goals/${created.body._id}`).set('Cookie', cookieFor(USER_B));
+    const created = await request(app).post('/api/goals').set('Cookie', cookieFor(USER_A)).set('x-requested-with', 'mindforge').send({ title: 'Mine' });
+    const res = await request(app).delete(`/api/goals/${created.body._id}`).set('Cookie', cookieFor(USER_B)).set('x-requested-with', 'mindforge');
     expect(res.status).toBe(404);
+  });
+});
+
+describe('CSRF protection (end-to-end, not just the middleware in isolation)', () => {
+  it('blocks a mutating request that has a completely valid auth cookie but no CSRF header — simulating a real cross-site attack', async () => {
+    // This is exactly what an attacker's hidden auto-submitting form on
+    // an unrelated site would produce: the victim's real, valid auth
+    // cookie attached automatically by the browser (SameSite=None in
+    // production allows this), but no custom header, since a plain form
+    // submission can't add one.
+    const res = await request(app)
+      .post('/api/goals')
+      .set('Cookie', cookieFor(USER_A))
+      .send({ title: 'Attacker-created goal' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('allows the identical request through once the CSRF header is present', async () => {
+    const res = await request(app)
+      .post('/api/goals')
+      .set('Cookie', cookieFor(USER_A))
+      .set('x-requested-with', 'mindforge')
+      .send({ title: 'Legitimate goal' });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('does not require the CSRF header for read-only requests', async () => {
+    const res = await request(app).get('/api/goals').set('Cookie', cookieFor(USER_A));
+    expect(res.status).toBe(200);
   });
 });
