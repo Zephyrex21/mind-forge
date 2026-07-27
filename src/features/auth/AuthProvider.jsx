@@ -35,16 +35,14 @@ export function AuthProvider({ children }) {
   // that keeps failing the same way with just a generic error toast.
   useEffect(() => {
     const handleUnauthorized = () => {
-      setUser((current) => {
-        if (current === null) return current; // already handled/logged out
-        showToast('Your session expired — please sign in again.');
-        setIsLoginModalOpen(true);
-        return null;
-      });
+      if (user === null) return; // already handled/logged out — don't re-toast
+      showToast('Your session expired — please sign in again.');
+      setIsLoginModalOpen(true);
+      setUser(null);
     };
     window.addEventListener('mindforge:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('mindforge:unauthorized', handleUnauthorized);
-  }, [showToast]);
+  }, [user, showToast]);
 
   const runPendingAction = useCallback(() => {
     setIsLoginModalOpen(false);

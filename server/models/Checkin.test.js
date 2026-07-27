@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dayKey } from './Checkin.js';
+import { dayKey, encodeCursor, decodeCursor } from './Checkin.js';
 
 // IST = UTC+5:30, so JS's Date.getTimezoneOffset() convention gives -330
 const IST_OFFSET = -330;
@@ -60,5 +60,42 @@ describe('dayKey (timezone-aware calendar-day bucketing)', () => {
     const morning = dayKey('2026-07-04T02:00:00Z', 0);
     const evening = dayKey('2026-07-04T22:00:00Z', 0);
     expect(morning).toBe(evening);
+  });
+});
+
+describe('encodeCursor / decodeCursor (pagination)', () => {
+  it('round-trips a cursor built from a document', () => {
+    const doc = { createdAt: new Date('2026-07-20T10:00:00.000Z'), _id: '507f1f77bcf86cd799439011' };
+    const cursor = encodeCursor(doc);
+    const decoded = decodeCursor(cursor);
+
+    expect(decoded.createdAt.toISOString()).toBe(doc.createdAt.toISOString());
+    expect(decoded.id).toBe(doc._id);
+  });
+
+  it('produces a distinct cursor for two documents sharing the exact same createdAt', () => {
+    // The whole point of the fix: createdAt alone isn't a safe cursor
+    // when two check-ins share the same millisecond timestamp — the _id
+    // is what keeps these two page-boundary cursors distinguishable.
+    const sameTime = new Date('2026-07-20T10:00:00.000Z');
+    const cursorA = encodeCursor({ createdAt: sameTime, _id: 'aaaaaaaaaaaaaaaaaaaaaaaa' });
+    const cursorB = encodeCursor({ createdAt: sameTime, _id: 'bbbbbbbbbbbbbbbbbbbbbbbb' });
+
+    expect(cursorA).not.toBe(cursorB);
+    expect(decodeCursor(cursorA).id).not.toBe(decodeCursor(cursorB).id);
+  });
+
+  it('returns null for a garbage/corrupted cursor instead of throwing', () => {
+    expect(decodeCursor('not-valid-base64-!!!')).toBeNull();
+  });
+
+  it('returns null for a well-formed base64 string that decodes to nonsense', () => {
+    const nonsense = Buffer.from('just some random text', 'utf8').toString('base64');
+    expect(decodeCursor(nonsense)).toBeNull();
+  });
+
+  it('returns null when the id half is missing', () => {
+    const malformed = Buffer.from('2026-07-20T10:00:00.000Z|', 'utf8').toString('base64');
+    expect(decodeCursor(malformed)).toBeNull();
   });
 });

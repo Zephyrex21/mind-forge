@@ -171,7 +171,6 @@ router.post('/', requireAuth, generateLimiter, async (req, res, next) => {
       releaseSlot(clientId);
     }
   } catch (err) {
-    releaseSlot(clientId);
     next(err);
   }
 });

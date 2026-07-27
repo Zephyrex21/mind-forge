@@ -21,6 +21,7 @@ export default function HabitTracker() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [pendingToggles, setPendingToggles] = useState(() => new Set());
   const todayKey = toLocalDateKey();
 
   const load = async () => {
@@ -55,6 +56,9 @@ export default function HabitTracker() {
   };
 
   const handleToggleToday = async (goal) => {
+    if (pendingToggles.has(goal._id)) return; // already mid-toggle — ignore the extra click
+    setPendingToggles((prev) => new Set(prev).add(goal._id));
+
     // Optimistic update so the checkbox feels instant; reconciled with the
     // server's response right after (and rolled back if it fails).
     const wasDone = goal.completions.includes(todayKey);
@@ -69,6 +73,12 @@ export default function HabitTracker() {
     } catch (err) {
       setGoals((prev) => prev.map((g) => (g._id === goal._id ? goal : g))); // roll back
       showToast(err.message || 'Failed to update goal');
+    } finally {
+      setPendingToggles((prev) => {
+        const next = new Set(prev);
+        next.delete(goal._id);
+        return next;
+      });
     }
   };
 
@@ -143,8 +153,9 @@ export default function HabitTracker() {
               >
                 <button
                   onClick={() => handleToggleToday(goal)}
+                  disabled={pendingToggles.has(goal._id)}
                   aria-label={doneToday ? `Mark ${goal.title} as not done today` : `Mark ${goal.title} as done today`}
-                  className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                  className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                     doneToday
                       ? 'bg-emerald-500 border-emerald-500 text-white'
                       : isDark ? 'border-gray-700 hover:border-emerald-500' : 'border-gray-300 hover:border-emerald-500'

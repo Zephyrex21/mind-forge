@@ -115,6 +115,17 @@ export function createApp() {
   app.use('/api/goals', goalsRouter);
   app.use('/api/user', userRouter);
 
+  // --- 404 (must come after all routes, before the error handler) ---
+  // Without this, an unmatched route falls through to Express's default
+  // HTML error page — inconsistent with every other error response in
+  // this API, which are all JSON. The frontend's fetch wrapper happens to
+  // handle a non-JSON response gracefully today, but anything else
+  // talking to this API (a future mobile client, Postman, a script)
+  // shouldn't have to special-case "this one endpoint returns HTML."
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+
   // --- Error handling (must be last) ---
   app.use(errorHandler);
 

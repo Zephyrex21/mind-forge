@@ -66,12 +66,42 @@ checkinSchema.index({ userId: 1, createdAt: -1 });
 
 const Checkin = mongoose.models.Checkin || model('Checkin', checkinSchema);
 
+/**
+ * Encodes a compound cursor (createdAt + _id) as an opaque base64 token.
+ *
+ * Using createdAt alone as the cursor has a real correctness gap: if two
+ * check-ins share the exact same createdAt (same millisecond — plausible
+ * for rapid-fire test data, a bulk import, or just bad luck) and they
+ * straddle a page boundary, a `createdAt: {$lt: cursor}` query on the next
+ * page would silently skip the tied document forever, since it's equal
+ * to the cursor, not less than it. Including `_id` (unique, and MongoDB
+ * compares ObjectIds correctly even when passed as their string form)
+ * makes the sort — and therefore the cursor — fully deterministic.
+ */
+function encodeCursor(doc) {
+  return Buffer.from(`${doc.createdAt.toISOString()}|${doc._id}`, 'utf8').toString('base64');
+}
+
+/** Returns null for a missing/corrupt cursor rather than throwing — an
+ * invalid cursor should just be treated as "start from the top" instead
+ * of crashing the request. */
+function decodeCursor(cursor) {
+  try {
+    const decoded = Buffer.from(cursor, 'base64').toString('utf8');
+    const [dateStr, id] = decoded.split('|');
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime()) || !id) return null;
+    return { createdAt: date, id };
+  } catch {
+    return null;
+  }
+}
+
 export const CheckinModel = {
   /**
    * Cursor-based pagination (not skip/limit) — skip/limit gets slower the
    * deeper a user pages in, since MongoDB still has to walk past every
-   * skipped document. The cursor is the `createdAt` of the last item on
-   * the previous page; combined with the existing `{userId:1,createdAt:-1}`
+   * skipped document. Combined with the existing `{userId:1,createdAt:-1}`
    * index, every page is an equally fast indexed range query regardless
    * of how far back it is.
    *
@@ -83,17 +113,21 @@ export const CheckinModel = {
   async getUserCheckins(userId, { limit = 30, cursor } = {}) {
     const safeLimit = Math.min(Math.max(Number(limit) || 30, 1), 100);
     const query = { userId };
+
     if (cursor) {
-      const cursorDate = new Date(cursor);
-      if (!Number.isNaN(cursorDate.getTime())) {
-        query.createdAt = { $lt: cursorDate };
+      const decoded = decodeCursor(cursor);
+      if (decoded) {
+        query.$or = [
+          { createdAt: { $lt: decoded.createdAt } },
+          { createdAt: decoded.createdAt, _id: { $lt: decoded.id } },
+        ];
       }
     }
 
-    const docs = await Checkin.find(query).sort({ createdAt: -1 }).limit(safeLimit + 1);
+    const docs = await Checkin.find(query).sort({ createdAt: -1, _id: -1 }).limit(safeLimit + 1);
     const hasMore = docs.length > safeLimit;
     const items = hasMore ? docs.slice(0, safeLimit) : docs;
-    const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
+    const nextCursor = hasMore ? encodeCursor(items[items.length - 1]) : null;
 
     return { items, nextCursor };
   },
@@ -245,5 +279,5 @@ function dayKey(date, tzOffsetMinutes = 0) {
   return shifted.getTime();
 }
 
-export { Checkin, dayKey };
+export { Checkin, dayKey, encodeCursor, decodeCursor };
 export default CheckinModel;
