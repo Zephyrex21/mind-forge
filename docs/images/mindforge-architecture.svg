@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F8FAF7"/><stop offset="100%" stop-color="#EDF2EC"/></linearGradient>
+    <linearGradient id="app" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EEF5EF"/><stop offset="100%" stop-color="#DDEBE1"/></linearGradient>
+    <linearGradient id="svc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F7EFEA"/><stop offset="100%" stop-color="#F1DDD2"/></linearGradient>
+    <linearGradient id="data" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EEF2F7"/><stop offset="100%" stop-color="#DEE6F0"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#7E897F" flood-opacity=".16"/></filter>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#77847A"/></marker>
+    <style>
+      .title{font:700 34px "Public Sans",Arial,sans-serif;fill:#29372F}.sub{font:500 17px "Public Sans",Arial,sans-serif;fill:#6B776F}.sec{font:700 12px "JetBrains Mono",monospace;fill:#668073;letter-spacing:2px}.nt{font:700 19px "Public Sans",Arial,sans-serif;fill:#304138}.ns{font:500 14px "Public Sans",Arial,sans-serif;fill:#67736B}.lab{font:700 11px "JetBrains Mono",monospace;fill:#6D7B72;letter-spacing:1px}
+    </style>
+  </defs>
+  <rect width="1600" height="900" rx="28" fill="url(#bg)"/>
+  <text x="70" y="70" class="title">MindForge — System Architecture</text>
+  <text x="70" y="102" class="sub">A safety-aware wellness journaling pipeline from check-in to grounded reflection and personal analytics.</text>
+
+  <text x="70" y="160" class="sec">CLIENT</text><text x="470" y="160" class="sec">API + APPLICATION SERVICES</text><text x="1090" y="160" class="sec">DATA / EXTERNAL SERVICES</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="205" width="300" height="145" rx="24" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+    <rect x="420" y="205" width="330" height="145" rx="24" fill="url(#app)" stroke="#BBD0C0" stroke-width="2"/>
+    <rect x="800" y="205" width="260" height="145" rx="24" fill="url(#svc)" stroke="#E3C5B5" stroke-width="2"/>
+    <rect x="1110" y="205" width="220" height="145" rx="24" fill="url(#data)" stroke="#C8D3E2" stroke-width="2"/>
+    <rect x="1370" y="205" width="160" height="145" rx="24" fill="url(#data)" stroke="#C8D3E2" stroke-width="2"/>
+  </g>
+
+  <text x="105" y="245" class="nt">React + Vite Client</text><text x="105" y="272" class="ns">Check-ins, dashboard, history</text><text x="105" y="295" class="ns">Insights, goals, breathing, settings</text><text x="105" y="320" class="ns">JWT auth via httpOnly cookies</text>
+  <text x="455" y="245" class="nt">Express API</text><text x="455" y="272" class="ns">Auth + CSRF + CORS + rate limits</text><text x="455" y="295" class="ns">Check-ins, goals, analytics, exports</text><text x="455" y="320" class="ns">Request IDs + structured errors</text>
+  <text x="835" y="245" class="nt">AI + Safety Layer</text><text x="835" y="272" class="ns">Prompt optimizer + model router</text><text x="835" y="295" class="ns">Per-user cache + retry/fallback</text><text x="835" y="320" class="ns">Crisis-language screening</text>
+  <text x="1135" y="245" class="nt">MongoDB</text><text x="1135" y="272" class="ns">Users</text><text x="1135" y="295" class="ns">Check-ins</text><text x="1135" y="318" class="ns">Goals / history</text>
+  <text x="1392" y="245" class="nt">Gemini</text><text x="1392" y="272" class="ns">Grounded reflection</text><text x="1392" y="295" class="ns">Fallback model chain</text>
+
+  <path d="M370 277H420" stroke="#77847A" stroke-width="3" fill="none" marker-end="url(#a)"/><path d="M750 277H800" stroke="#77847A" stroke-width="3" fill="none" marker-end="url(#a)"/><path d="M1060 277H1110" stroke="#77847A" stroke-width="3" fill="none" marker-end="url(#a)"/><path d="M1330 277H1370" stroke="#77847A" stroke-width="3" fill="none" marker-end="url(#a)"/>
+
+  <text x="70" y="430" class="sec">CROSS-CUTTING SAFETY + OPERATIONS</text>
+  <g filter="url(#shadow)">
+    <rect x="70" y="470" width="260" height="118" rx="22" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+    <rect x="365" y="470" width="260" height="118" rx="22" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+    <rect x="660" y="470" width="260" height="118" rx="22" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+    <rect x="955" y="470" width="260" height="118" rx="22" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+    <rect x="1250" y="470" width="280" height="118" rx="22" fill="#FFFFFF" stroke="#CFD9D0" stroke-width="2"/>
+  </g>
+  <text x="100" y="510" class="nt">Authentication</text><text x="100" y="537" class="ns">JWT + bcrypt</text><text x="100" y="559" class="ns">httpOnly / secure cookies</text>
+  <text x="395" y="510" class="nt">Request Security</text><text x="395" y="537" class="ns">Helmet + strict CORS</text><text x="395" y="559" class="ns">JSON limits + CSRF</text>
+  <text x="690" y="510" class="nt">Rate Limiting</text><text x="690" y="537" class="ns">Global + auth + AI tiers</text><text x="690" y="559" class="ns">IP / user-aware keys</text>
+  <text x="985" y="510" class="nt">Observability</text><text x="985" y="537" class="ns">Request IDs + Sentry</text><text x="985" y="559" class="ns">Centralized error reporting</text>
+  <text x="1280" y="510" class="nt">Resilience</text><text x="1280" y="537" class="ns">Retry / backoff + model fallback</text><text x="1280" y="559" class="ns">Graceful shutdown + DB retry</text>
+
+  <path d="M585 350V420H200V470" stroke="#A9B3AA" stroke-width="2" fill="none" stroke-dasharray="7 7" marker-end="url(#a)"/>
+  <path d="M585 350V420H495V470" stroke="#A9B3AA" stroke-width="2" fill="none" stroke-dasharray="7 7" marker-end="url(#a)"/>
+  <path d="M930 350V470" stroke="#A9B3AA" stroke-width="2" fill="none" stroke-dasharray="7 7" marker-end="url(#a)"/>
+  <path d="M930 350V420H1085V470" stroke="#A9B3AA" stroke-width="2" fill="none" stroke-dasharray="7 7" marker-end="url(#a)"/>
+  <path d="M930 350V420H1390V470" stroke="#A9B3AA" stroke-width="2" fill="none" stroke-dasharray="7 7" marker-end="url(#a)"/>
+
+  <rect x="70" y="650" width="1460" height="160" rx="24" fill="#F1F5F0" stroke="#D5DED5" stroke-width="2"/>
+  <text x="100" y="690" class="sec">PRIMARY REQUEST FLOW</text>
+  <text x="100" y="730" class="ns" style="font-size:16px">1. User submits a mood / energy / sleep check-in.</text>
+  <text x="100" y="758" class="ns" style="font-size:16px">2. Express authenticates and validates the request, then applies safety screening.</text>
+  <text x="100" y="786" class="ns" style="font-size:16px">3. AI service builds a grounded prompt from the user's own entry and generates a short reflection through Gemini.</text>
+  <text x="800" y="730" class="ns" style="font-size:16px">4. Response is cached per user and persisted with the check-in.</text>
+  <text x="800" y="758" class="ns" style="font-size:16px">5. Dashboard and insights aggregate only the user's own history.</text>
+  <text x="800" y="786" class="ns" style="font-size:16px">6. Crisis-language matches surface configured resources independently of model success.</text>
+</svg>
