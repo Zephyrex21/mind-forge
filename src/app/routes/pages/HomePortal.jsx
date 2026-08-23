@@ -304,6 +304,20 @@ export default function HomePortal() {
   const previewHeadingRef = useRef(null);
   const faqHeadingRef = useRef(null);
 
+  // Play the landing-page heading text reveals once after the page mounts.
+  // The previous viewport-triggered approach replayed when users scrolled
+  // back to a section; these are intentionally one-time entrance effects.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrambleReveal(featuresHeadingRef.current);
+      scrambleReveal(howItWorksHeadingRef.current);
+      scrambleReveal(previewHeadingRef.current);
+      scrambleReveal(faqHeadingRef.current);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Interactive mockup state machine — auto-cycles 0→1→2→3→0 continuously.
   const [mockupStep, setMockupStep] = useState(0);
   const mockupRef = useRef(null);
@@ -808,7 +822,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <motion.h2 ref={featuresHeadingRef} onViewportEnter={() => scrambleReveal(featuresHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</motion.h2>
+          <motion.h2 ref={featuresHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Everything a daily check-in needs</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -859,7 +873,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <motion.h2 ref={howItWorksHeadingRef} onViewportEnter={() => scrambleReveal(howItWorksHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</motion.h2>
+          <motion.h2 ref={howItWorksHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">How it works</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -916,7 +930,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-4"
         >
-          <motion.h2 ref={previewHeadingRef} onViewportEnter={() => scrambleReveal(previewHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</motion.h2>
+          <motion.h2 ref={previewHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">See your progress build</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -1064,7 +1078,7 @@ export default function HomePortal() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16 space-y-4"
         >
-          <motion.h2 ref={faqHeadingRef} onViewportEnter={() => scrambleReveal(faqHeadingRef.current)} viewport={{ once: true, margin: '-100px' }} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</motion.h2>
+          <motion.h2 ref={faqHeadingRef} className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white sm:text-4xl">Frequently Asked Questions</motion.h2>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
